@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+.ipynb_checkpoints/
+# Participant files and analysis outputs belong only in the Workbench.
+private_inputs/
+results/
+*.log
