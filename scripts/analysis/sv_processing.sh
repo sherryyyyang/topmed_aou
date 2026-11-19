@@ -1,0 +1,4 @@
+fd . /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/data/vcfs-pass-variants-only/ | rg -v tbi | sort -V >! /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/sv/sv_genotypes/vcf_list
+bcftools concat --file-list /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/sv/sv_genotypes/vcf_list --output /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/sv/sv_genotypes/svs_af0.01_missing0.1.vcf.gz
+
+parallel -j14 --eta --progress "bcftools view --include 'AF<0.01 & F_MISSING < 0.1' -Ou -s {} /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/sv/sv_genotypes/svs_af0.01_missing0.1.vcf.gz | bcftools query -f \"%CHROM\t%POS\t%END\t%ID\t%ALT\t%SVLEN\t%AF\" --include \"GT='alt'\" > /net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/sv/sv_genotypes/individual_svs/{}" <  ../sv/sv_subjects

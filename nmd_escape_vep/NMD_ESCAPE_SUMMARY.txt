@@ -1,0 +1,31 @@
+Fig3b PTV NMD-escape summary (Ensembl VEP NMD plugin)
+======================================================
+VEP: ensembl-vep 113.0 offline
+Cache: annotation/vep_cache/homo_sapiens/109_GRCh38 (--cache_version 109)
+Plugin: NMD (--plugin NMD); term NMD_escaping_variant
+Input: unique variants from ptv_all.tsv (LOFTEE HC), n=35716
+Transcript pick for status: MANE_SELECT > CANONICAL > other, preferring PTV SO terms
+
+--- All unique HC PTVs ---
+  NMD_escaping: 8156 (22.84%)
+  NMD_triggering: 27493 (76.98%)
+  inconclusive: 67 (0.19%)
+  any-transcript NMD_escaping_variant: 11171 (31.28%)
+
+--- AF<0.1% (Fig3b paper cutoff) n=34844 ---
+  NMD_escaping: 7895 (22.66%)
+  NMD_triggering: 26885 (77.16%)
+  inconclusive: 64 (0.18%)
+
+--- AF<0.5% n=35716 ---
+  NMD_escaping: 8156 (22.84%)
+  NMD_triggering: 27493 (76.98%)
+  inconclusive: 67 (0.19%)
+
+Exact VEP command:
+  vep -i fig3b_ptv_unique.vcf --offline --cache --dir_cache .../annotation/vep_cache
+      --cache_version 109 --assembly GRCh38 --plugin NMD
+      --dir_plugins .../ensembl-vep/lib/perl5/site_perl --symbol --canonical --mane_select --fork 8
+
+Note: ptv_all.tsv is already LOFTEE HC (END_TRUNC filtered). VEP NMD plugin can still
+flag escape via last-exon / 50bp / first-100-CDS / intronless rules on picked transcripts.

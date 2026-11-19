@@ -1,0 +1,14 @@
+# NMD / VEP artifacts that stay outside the git repo
+#
+# Required for Fig3 gene-level NMD colouring (plot_ptv_vs_underlier_gene_level_2x2.R):
+#   fig3b_ptv_nmd_escape_by_variant.tsv
+#     Re-export with:  ./repo_export/export_github_repo.sh --with-nmd-tables OUT
+#     Or copy from the analysis tree nmd_escape_vep/.
+#
+# Do NOT commit:
+#   fig3b_ptv_vep_nmd.txt          (~70 MB raw VEP)
+#   vep_cache/                    (Ensembl cache; multi-GB)
+#   *.log, *_summary.html
+#
+# To regenerate annotations, see README_NMD_escape.md and VEP_NMD_COMMAND.sh
+# (set VEP_ENV, VEP_CACHE, NMD_OUT).

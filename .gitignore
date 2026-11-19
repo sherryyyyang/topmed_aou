@@ -8,3 +8,31 @@ __pycache__/
 private_inputs/
 results/
 *.log
+
+# TOPMed figure/analysis scripts export
+# Local path config
+config/paths.sh
+
+# Python / R junk
+*.pyc
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+# Heavy / regenerable / sensitive
+data/expression/
+data/underliers/
+data/underliers_*/
+*.rds
+nmd_escape_vep/vep_cache/
+nmd_escape_vep/fig3b_ptv_vep_nmd.txt
+nmd_escape_vep/*.log
+*.html
+# Rendered figures (regenerate)
+*.png
+*.pdf
+!docs/**/*.png
+scripts/fig1_overview/assets/*.jpgbak
+# Logs / work products
+logs/
+EXPORT_INFO.txt

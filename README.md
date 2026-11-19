@@ -43,3 +43,12 @@ Replace the example genes with exactly the selected genes. The output contains p
 - ICD-to-PhecodeX definitions: PheWAS PhecodeX v1.0 source files in `data/sources/`.
 
 The reference builder is `scripts/build_references.py`. Public references can be regenerated from the ClinGen and All of Us workbook exports. Inspect its mapping rules before regenerating.
+
+## TOPMed RNA-outlier figures
+
+Figure/table regeneration scripts for the TOPMed whole-blood RNA-outlier /
+underlier analyses live under `scripts/` (fig1–fig4, supplement, analysis,
+helpers, pc_swap). See [FIGURES_README.md](FIGURES_README.md),
+[PATHS.md](PATHS.md), and [docs/](docs/) for layout and cluster paths.
+Heavy expression matrices and underlier RDS objects are not in this repo.
+
