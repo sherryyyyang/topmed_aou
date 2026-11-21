@@ -14,9 +14,11 @@ cd "$DATA_ROOT"
 ./scripts/run_pipeline_pc.sh
 ```
 
-## 0. Cohort VCF filter
+## 0. Source VCFs to PLINK
 
-`scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` filters each chromosome VCF with bcftools: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` to the input `chr{1..22,X}.vcf.gz` directory and `OUTDIR` to the filtered directory (a typical layout is `$DATA_ROOT/data/genotypes/vcf/filtered_by_f_missing_01_pass_snp_indel_30bp`). This step does not call underliers. PLINK files used later are a separate conversion of the cohort genotypes.
+`scripts/genotypes/vcf_to_plink.sh` is the standalone genotype fetch. It reads `VCF_DIR/chr{1..22,X}.vcf.gz` and a sample list. For each chromosome, bcftools keeps those samples, SNPs or indels with `|ILEN| < 50`, sites with minor allele count at least 1, and `FILTER` of `PASS` or `.`. `plink2 --vcf` then writes `$OUT_DIR/plink/chr*.bed`, `.bim`, and `.fam`. `run_underlier_pipeline.R` reads that PLINK directory.
+
+`scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` is a stricter bcftools pass on chromosome VCFs: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` and `OUTDIR`. It does not read PLINK and it does not call underliers.
 
 ## 1. Counts and genotypes to z and adjusted log2CPM
 
