@@ -27,7 +27,7 @@ What on disk shows 1055:
 
 - `pipeline_pc1055_20261119_021923.log` starts with `PC_SETTING=1055`, derives `data/underliers_pc1055/`, and records `wrote Figure1`, `wrote Figure2`, and `wrote Figure3`. The follow-up log `pipeline_pc1055_20261119_023053.log` (also `PC_SETTING=1055`) rewrote Figure 4 and the supplementary stage. Both logs live in the submission package `logs/` directory and are not part of this repo.
 - Figure 1 and Figure 2 panels were refreshed on 2026-11-20 under `pre_Watershed_scripts/pc1055_work/` and copied into `figures/main` the same morning.
-- Figure 3 was reassembled on 2026-11-20 from panels written that evening under `pc1055_work/fig3_ptv_vs_rna/` (`panel_a` 19:37, `panel_b` 19:39, `figures/main/Figure3.png` 19:40).
+- Figure 3 was reassembled on 2026-11-20 under `pc1055_work/`. The copy in `figures/main/Figure3.png` (and the matching PDF) is the later rebuild, with the rightmost Fig. 3a panel on a linear percent axis.
 - `export_fig3b_no_sv_color.R` and `export_fig3b_excl_sv_cnv.R` default `PC_SETTING` to **1055** and write `figures/main/Figure3b_no_sv_color.*` and `Figure3b_excl_sv_cnv.*`.
 - Supplementary Figure 1 marks a dashed guide at 1055 (`plot_enrichment_npc_sv_vs_ptv.R`). Supplementary Figure 6 keeps the enrichment-OR row where `npcs == PC_SETTING` (`make_supplementary_s2_s5.R`).
 
@@ -135,7 +135,7 @@ Figure 3 row order in `assemble_nature_figures.R` is *z*-score (`f3b`), then gen
 fig <- (rows[["AF<0.1%"]]$pA | rows[["AF<0.1%"]]$pB | rows[["AF<0.1%"]]$pC)
 ```
 
-The right-hand panel (`pC`, title “Outlier rate (log % axis)”) plots percent of pairs on `scale_y_log10`. Values are drawn with `pmax(pct, 0.005)` so *z* < −3 and *z* < −4 bars stay visible. Fold annotations still use the unfloored percents.
+The rightmost panel (`pC`) is linear. It draws `geom_col` of the raw percent (`pct`), so the bars start at 0 (`scale_y_continuous`, `expand = expansion(mult = c(0, 0.22))`). The title is “Outlier rate (fold-enrichment)” and the y label is “% of pairs”. That panel has no 0.005% visibility floor and no `scale_y_log10`. The middle panel (`pB`) is still the cumulative distribution on a log axis.
 
 **3b** (`plot_ptv_vs_underlier_gene_level_2x2.R`). One point per gene. Both axes are `scale_*_log10`. Zeros are placed at half the smallest positive percent and labelled “0%”. Spearman ρ is computed on genes with `n_ptv_carriers > 0` (`stats::cor(..., method = "spearman")`).
 
