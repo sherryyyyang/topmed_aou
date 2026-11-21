@@ -1,4 +1,4 @@
-# Do not add individual-level genotypes, expression matrices, or credentials.
+# Do not add individual-level genotypes, expression matrices, credentials, or run outputs.
 *.rds
 *.vcf
 *.vcf.gz
@@ -6,7 +6,22 @@
 *.bed
 *.bim
 *.fam
-*.env
+*.tsv
+*.csv
+*.png
+*.pdf
+*.jpg
+*.jpeg
+*.svg
+*.tif
+*.tiff
+*.gif
+figures/
+assets/
+source_panels/
+composites/
+paper/
+.env
 credentials*
 __pycache__/
 *.pyc

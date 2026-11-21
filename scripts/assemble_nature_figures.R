@@ -440,55 +440,13 @@ if (identical(Sys.getenv("ONLY_FIG"), "4")) {
   quit(save = "no")
 }
 
-# ---------- Supplementary Figure 1: a SV | b PTV (enrichment only) ----------
-# Gene-z vs cell-type r stays on Supplementary Figure 8; PTV consequences is
-# its own figure (Supplementary Figure 10). Do not stack them under S1.
-s1ab <- source_panel(file.path(SCR, "supplement/plot_enrichment_npc_sv_vs_ptv.R"))
-s1c  <- source_panel(file.path(SCR, "supplement/plot_ptv_consequence_summary.R"))
-s1_panels <- cowplot::plot_grid(
-  s1ab$a + theme(legend.position = "none"),
-  s1ab$b + theme(legend.position = "none"),
-  ncol = 2, labels = c("a", "b"),
-  label_fontfamily = PAPER_FONT, label_size = 14, label_fontface = "bold",
-  align = "hv"
-)
-s1_leg <- cowplot::get_legend(
-  s1ab$b + theme(
-    legend.position = "bottom",
-    legend.box = "horizontal",
-    legend.justification = "center"
-  )
-)
-sfig1 <- cowplot::plot_grid(
-  s1_panels, s1_leg, ncol = 1, rel_heights = c(1, 0.10)
-)
-save_fig(sfig1, "Supplementary_Figure1", height = 4.8)
-
-# ---------- Supplementary Figure 10: PTV consequence composition ----------
-sfig10 <- s1c$c
-save_fig(sfig10, "Supplementary_Figure10", height = 5.6)
-
-# Supplemental composites live in supp_figs, not source_panels.
-for (name in c("Supplementary_Figure1", "Supplementary_Figure10")) {
-  for (ext in c("png", "pdf")) {
-    src <- file.path(src_pan, paste0(name, ".", ext))
-    if (file.exists(src)) file.rename(src, file.path(SUP_FIGS, basename(src)))
-    # composites already land in FIG_SUPP / FIG_MAIN via save_fig()
-  }
-}
-copy_ggplot(s1ab$a, "FigS1a_sv_enrichment", NATURE_DOUBLE_IN / 2, 4.2, dest_dir = SUP_FIGS)
-copy_ggplot(s1ab$b, "FigS1b_ptv_enrichment", NATURE_DOUBLE_IN / 2, 4.2, dest_dir = SUP_FIGS)
-copy_ggplot(s1c$c, "FigS1c_ptv_consequences", NATURE_DOUBLE_IN, 5.2, dest_dir = SUP_FIGS)
-copy_ggplot(s1c$c, "FigS10a_ptv_consequences", NATURE_DOUBLE_IN, 5.2, dest_dir = SUP_FIGS)
-
 stale <- c(
   "Fig1A_study_design.png", "Fig1B_rank_curves.png",
   "Fig1C_topmed_vs_aou_uncolored.png", "Fig2A_loeuf_calibration.png",
   "Fig2B_constrained_vs_tolerant.png", "Fig2C_loeuf_scatter_panelB_crop.png",
   "Fig2C_ORIGINAL_two_panel_refined_LOEUF.png",
   "Fig3A_ptv_vs_underlier_z-3_only.png", "Fig3B_ptv_vs_nonptv_zscore.png",
-  "Fig3C_clingen_zscore_hist.png", "Fig4A_RBM20.png", "Fig4B_MYH11.png",
-  "FigS1A_pc_enrichment.png", "FigS1B_ptv_consequences.png"
+  "Fig3C_clingen_zscore_hist.png", "Fig4A_RBM20.png", "Fig4B_MYH11.png"
 )
 invisible(file.remove(file.path(src_pan, stale)[file.exists(file.path(src_pan, stale))]))
 
