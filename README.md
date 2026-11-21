@@ -44,8 +44,12 @@ Figure 1 reads the underlier tallies and the prevalence table: `fig1_overview/ma
 
 Figure 2 reads underlier calls, `loeuf_lookup.rds`, and the prevalence table: `fig2_constraint/plot_loeuf_calibration.R`, `plot_underlier_tallies_loeuf_constrained_tolerant.R`, `plot_topmed_vs_aou_prevalence_loeuf.R`.
 
-Figure 3 reads underlier calls, the PTV table, the dosage tables, and the ClinGen HI list: `fig3_ptv_vs_rna/plot_ptv_vs_nonptv_zscore.R`, `plot_ptv_vs_underlier_gene_level_2x2.R`, `plot_candidate_gene_zscore_dist_clingen_z3.R`.
+Figure 3 reads underlier calls, the PTV table, and the dosage tables. The histogram hardcodes eight gene symbols and does not open the ClinGen HI CSV. Scripts: `fig3_ptv_vs_rna/plot_ptv_vs_nonptv_zscore.R`, `plot_ptv_vs_underlier_gene_level_2x2.R`, `plot_candidate_gene_zscore_dist_clingen_z3.R`.
 
 Figure 4 reads the prevalence table, the PTV table, the gnomAD AF sum, and the ACMG list: `fig4_acmg/plot_shared_rare_outlier_genes_4dot.R`, `plot_acmg_4dot_no_ci.R`.
 
 The assembler writes Figure 1–4 png/pdf files into the delivery directory for this run. Those images are not part of this repository.
+
+## External annotations
+
+Download URLs, versions, and the filename under `$DATA_ROOT` for each annotation Figures 1–4 actually read are in [docs/ANNOTATIONS.md](docs/ANNOTATIONS.md). ClinVar is not one of those inputs.
