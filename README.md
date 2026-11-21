@@ -14,6 +14,10 @@ cd "$DATA_ROOT"
 ./scripts/run_pipeline_pc.sh
 ```
 
+## 0. Cohort VCF filter
+
+`scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` filters each chromosome VCF with bcftools: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` to the input `chr{1..22,X}.vcf.gz` directory and `OUTDIR` to the filtered directory (a typical layout is `$DATA_ROOT/data/genotypes/vcf/filtered_by_f_missing_01_pass_snp_indel_30bp`). This step does not call underliers. PLINK files used later are a separate conversion of the cohort genotypes.
+
 ## 1. Counts and genotypes to z and adjusted log2CPM
 
 `scripts/analysis/run_underlier_pipeline.R` reads gene counts, a GENCODE gene model, and PLINK genotypes from the paths in its CONFIG block. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.

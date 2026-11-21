@@ -66,6 +66,20 @@ Expected file: `$DATA_ROOT/data/references/genomicSuperDups_hg38.txt.gz`. The sc
 
 **How it was obtained.** Source not recorded in the scripts. The assembled panel does not read `ClinGen_HI_Sufficient_evidence.csv`.
 
+## Cohort genotype VCF filter
+
+**Step.** `scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` is the bcftools filter on the per-chromosome cohort VCFs, before those genotypes are used downstream. It is not opened by the Figure 1–4 plotting scripts. Those scripts read PLINK dosages, `ptv_all.tsv`, and the PASS SV VCFs described above.
+
+**Rule.** For each of chr1–22 and chrX:
+
+```bash
+bcftools view -f PASS "$in_vcf" -r "chr${CHR}" \
+  | bcftools view -i 'F_MISSING<0.1' \
+  | bcftools view -i 'TYPE=="snp" || (ILEN <= 30 && ILEN >= -30)'
+```
+
+**Inputs and outputs.** `COHORT_VCF_DIR/chr{1..22,X}.vcf.gz` in, `OUTDIR/chr{1..22,X}.vcf.gz` plus a tabix index out. Both directories are set in the environment. A usual `OUTDIR` is `$DATA_ROOT/data/genotypes/vcf/filtered_by_f_missing_01_pass_snp_indel_30bp`.
+
 ## Checked and not used by Figures 1–4
 
 **ClinVar.** No Figure 1–4 script reads a ClinVar VCF or uses a ClinVar label as a filter. The chromosome-wise overlap job is a separate analysis (`slurm_clinvar_x_cohort_full_array.sbatch`); it is not called by `assemble_nature_figures.R`. That job’s default VCF is `annotation/variant_annotations/clinvar.vcf.gz`. Its header is `##fileDate=2024-02-15`, `##source=ClinVar`, `##reference=GRCh38`. The download command is not in the scripts.
