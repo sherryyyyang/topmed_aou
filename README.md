@@ -20,6 +20,12 @@ cd "$DATA_ROOT"
 
 `scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` is a stricter bcftools pass on chromosome VCFs: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` and `OUTDIR`. It does not read PLINK and it does not call underliers.
 
+## 0b. Structural variants
+
+`scripts/genotypes/process_svs.sh` concatenates the per-chromosome PASS SV VCFs in `SV_VCF_DIR` (`chr*.vcf.gz`, muCNV PASS callset) into `$OUT_DIR/svs_pass.vcf.gz`. For each id in `SV_SUBJECTS` it writes `$OUT_DIR/individual_svs/<sample>`: sites with `AF < 0.01`, `F_MISSING < 0.1`, and an alternate genotype (`CHROM`, `POS`, `END`, `ID`, `ALT`, `SVLEN`, `AF`).
+
+Figure 3b color is a separate step. `scripts/fig3_ptv_vs_rna/build_fig3b_segdup_svtype_genes.R` reads those same per-chromosome PASS SV VCFs, keeps SegDup-pass genes, and labels each gene by its gene-overlapping DEL, DUP, or INV with the largest `|SVLEN|` (any allele frequency).
+
 ## 1. Counts and genotypes to z and adjusted log2CPM
 
 `scripts/analysis/run_underlier_pipeline.R` reads gene counts, a GENCODE gene model, and PLINK genotypes from the paths in its CONFIG block. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
