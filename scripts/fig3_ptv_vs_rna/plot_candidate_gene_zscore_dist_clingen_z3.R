@@ -24,6 +24,8 @@ PW <- ROOT
 SH  <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang"
 
 Z_THRESH <- -3
+# gnomAD allele fraction in ptv_all.tsv (0.001 = 0.1%); matches Fig3b paper panel.
+PTV_AF_MAX <- 0.001
 
 candidates <- tribble(
   ~gene_nv,           ~symbol,   ~corner,
@@ -41,9 +43,9 @@ cat("Loading kept_subjects.rds ...\n")
 kept_subjects <- read_rds(KEPT_SUBJECTS)
 n_kept <- length(kept_subjects)
 
-cat("Loading PTV table ...\n")
-ptv_carriers <- read_tsv(file.path(SH, "ptv_all.tsv"), show_col_types = FALSE) |>
-  filter(sample %in% kept_subjects) |>
+cat("Loading PTV table (rare PTV: AF <", PTV_AF_MAX, ") ...\n")
+ptv_carriers <- read_tsv(PTV_TSV, show_col_types = FALSE) |>
+  filter(sample %in% kept_subjects, !is.na(af), af < PTV_AF_MAX) |>
   mutate(gene_nv = str_remove(gene, "\\..*$")) |>
   filter(gene_nv %in% candidates$gene_nv) |>
   distinct(subjectid = sample, gene_nv) |>

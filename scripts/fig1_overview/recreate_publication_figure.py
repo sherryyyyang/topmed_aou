@@ -55,22 +55,32 @@ def ribbon(ax, x0, y0, x1, y1, thickness, color, alpha=0.9):
 
 
 def draw_person(ax, x, y, color, scale=1.0):
-    """Small flat participant pictogram centered at x,y."""
-    r = 0.105 * scale
-    ax.add_patch(Circle((x, y + 0.46 * scale), r, color=color, ec="none", zorder=3))
-    body = FancyBboxPatch((x - 0.13 * scale, y + 0.02 * scale),
-                          0.26 * scale, 0.34 * scale,
-                          boxstyle=f"round,pad=0.02,rounding_size={0.08*scale}",
-                          color=color, ec="none", zorder=2)
-    ax.add_patch(body)
-    ax.plot([x - 0.07 * scale, x - 0.07 * scale], [y + 0.03 * scale, y - 0.31 * scale],
-            color=color, lw=5 * scale, solid_capstyle="round", zorder=2)
-    ax.plot([x + 0.07 * scale, x + 0.07 * scale], [y + 0.03 * scale, y - 0.31 * scale],
-            color=color, lw=5 * scale, solid_capstyle="round", zorder=2)
-    ax.plot([x - 0.11 * scale, x - 0.24 * scale], [y + 0.27 * scale, y + 0.02 * scale],
-            color=color, lw=5 * scale, solid_capstyle="round", zorder=2)
-    ax.plot([x + 0.11 * scale, x + 0.24 * scale], [y + 0.27 * scale, y + 0.02 * scale],
-            color=color, lw=5 * scale, solid_capstyle="round", zorder=2)
+    """Tall Nature-clean participant pictogram (ISO-style silhouette).
+
+    Larger overall scale than the prior stick figure; rounded torso capsule
+    with hanging arms and slightly flared legs — no blocky shoulder pads.
+    """
+    s = scale
+    ax.add_patch(Circle((x, y + 0.90 * s), 0.105 * s, color=color, ec="none", zorder=3))
+    # Rounded torso capsule (fuller midsection, soft corners)
+    torso = FancyBboxPatch(
+        (x - 0.145 * s, y + 0.20 * s), 0.29 * s, 0.52 * s,
+        boxstyle=f"round,pad=0.01,rounding_size={0.11 * s}",
+        color=color, ec="none", zorder=2,
+    )
+    ax.add_patch(torso)
+    lw = 5.4 * s
+    # Legs — balanced length, slight outward flare, rounded tips
+    ax.plot([x - 0.055 * s, x - 0.080 * s], [y + 0.24 * s, y - 0.40 * s],
+            color=color, lw=lw, solid_capstyle="round", zorder=2)
+    ax.plot([x + 0.055 * s, x + 0.080 * s], [y + 0.24 * s, y - 0.40 * s],
+            color=color, lw=lw, solid_capstyle="round", zorder=2)
+    # Arms hang close to torso (subtle design change vs outstretched sticks)
+    ax.plot([x - 0.145 * s, x - 0.195 * s], [y + 0.58 * s, y + 0.28 * s],
+            color=color, lw=lw * 0.88, solid_capstyle="round", zorder=2)
+    ax.plot([x + 0.145 * s, x + 0.195 * s], [y + 0.58 * s, y + 0.28 * s],
+            color=color, lw=lw * 0.88, solid_capstyle="round", zorder=2)
+
 
 
 def draw_dna(ax, x, y, color=NAVY):
@@ -133,37 +143,43 @@ def main():
                 fontsize=7.2, color="#A45B00", ha="right")
 
     # All of Us panel: concise acquisition-to-match sequence.
-    draw_person(ax, 7.18, 2.55, "#65A982", 0.78)
-    draw_person(ax, 7.55, 2.55, "#E16A83", 0.78)
-    draw_person(ax, 7.92, 2.55, "#43A0B6", 0.78)
-    ax.text(7.55, 1.95, "Participants", ha="center", color=INK, fontsize=9, weight="bold")
-    ax.annotate("", xy=(8.62, 2.75), xytext=(8.30, 2.75),
+    # Tall pictograms (~WGS-box height); spaced so arms stay distinct.
+    draw_person(ax, 6.95, 2.38, "#65A982", 1.55)
+    draw_person(ax, 7.50, 2.38, "#E16A83", 1.55)
+    draw_person(ax, 8.05, 2.38, "#43A0B6", 1.55)
+    ax.text(7.50, 1.42, "Participants", ha="center", color=INK, fontsize=9, weight="bold")
+    ax.annotate("", xy=(8.62, 2.75), xytext=(8.40, 2.75),
                 arrowprops=dict(arrowstyle="-|>", color="#9AA3AF", lw=1.5))
 
-    # Two omics inputs
-    ax.add_patch(FancyBboxPatch((8.72, 3.00), 1.23, 0.78,
-                                boxstyle="round,pad=0.08,rounding_size=0.08",
+    # Two omics inputs — wide rectangles so labels fit fully (not square cards)
+    omics_x, omics_w, omics_h = 8.65, 1.78, 0.60
+    ax.add_patch(FancyBboxPatch((omics_x, 3.12), omics_w, omics_h,
+                                boxstyle="round,pad=0.02,rounding_size=0.04",
                                 facecolor="#F4F6FB", edgecolor="#DCE2EF", lw=1))
-    draw_dna(ax, 8.84, 3.48)
-    ax.text(9.42, 3.39, "WGS", fontsize=9, weight="bold", color=INK, va="center")
-    ax.text(9.42, 3.17, "Genome", fontsize=7.5, color=MUTED, va="center")
-    ax.add_patch(FancyBboxPatch((8.72, 1.93), 1.23, 0.78,
-                                boxstyle="round,pad=0.08,rounding_size=0.08",
+    draw_dna(ax, 8.76, 3.42)
+    ax.text(9.62, 3.46, "WGS", fontsize=9, weight="bold", color=INK,
+            va="center", ha="center")
+    ax.text(9.62, 3.27, "Genome", fontsize=7.5, color=MUTED,
+            va="center", ha="center")
+    ax.add_patch(FancyBboxPatch((omics_x, 2.02), omics_w, omics_h,
+                                boxstyle="round,pad=0.02,rounding_size=0.04",
                                 facecolor="#F2FAF8", edgecolor="#D7ECE5", lw=1))
     # RNA glyph
     import numpy as np
     t = np.linspace(0, 2 * np.pi, 50)
-    ax.plot(8.83 + 0.37 * t/(2*np.pi), 2.36 + 0.075*np.sin(t), color=TEAL, lw=2)
-    ax.text(9.42, 2.35, "Bulk RNA-seq", fontsize=8, weight="bold", color=INK, va="center")
-    ax.text(9.42, 2.13, "Transcriptome", fontsize=7.2, color=MUTED, va="center")
-    ax.annotate("", xy=(10.42, 2.75), xytext=(10.05, 2.75),
+    ax.plot(8.76 + 0.37 * t/(2*np.pi), 2.32 + 0.075*np.sin(t), color=TEAL, lw=2)
+    ax.text(9.62, 2.36, "Bulk RNA-seq", fontsize=8, weight="bold", color=INK,
+            va="center", ha="center")
+    ax.text(9.62, 2.17, "Transcriptome", fontsize=7.2, color=MUTED,
+            va="center", ha="center")
+    ax.annotate("", xy=(10.62, 2.75), xytext=(10.48, 2.75),
                 arrowprops=dict(arrowstyle="-|>", color="#9AA3AF", lw=1.5))
-    ax.add_patch(FancyBboxPatch((10.55, 2.32), 1.42, 0.88,
+    ax.add_patch(FancyBboxPatch((10.72, 2.32), 1.42, 0.88,
                                 boxstyle="round,pad=0.10,rounding_size=0.10",
                                 facecolor=NAVY, edgecolor="none"))
-    ax.text(11.26, 2.86, f"N = {AOU_MATCHED:,}", ha="center", va="center",
+    ax.text(11.43, 2.86, f"N = {AOU_MATCHED:,}", ha="center", va="center",
             fontsize=14, weight="bold", color="white")
-    ax.text(11.26, 2.57, "matched samples", ha="center", va="center",
+    ax.text(11.43, 2.57, "matched samples", ha="center", va="center",
             fontsize=7.5, color="white")
     ax.text(6.55, 0.59, "Whole-genome sequencing + bulk RNA-seq", fontsize=9, color=INK)
     ax.text(6.55, 0.29, "Participant illustration and logos omitted for a clean, scalable layout",

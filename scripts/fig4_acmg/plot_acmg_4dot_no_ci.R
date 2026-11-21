@@ -108,6 +108,17 @@ make_pair <- function(focus) {
   y_lo <- min(y_rna, y_ptv)
   y_mid <- exp(mean(log(c(y_hi, y_lo))))
   show_delta <- TRUE  # RNA−PTV bracket on both ranks panels (4a and 4c)
+  # Gene-name callout pointing at the focus dots (not the right-margin bridge).
+  y_name <- min(
+    Y_LIM_RANKS[2] * 0.45,
+    10^(log10(max(la_focus$y_plot)) + 0.55)
+  )
+  x_name <- if (focus_rank > max(la_nz$rank, na.rm = TRUE) * 0.55) {
+    focus_rank - 55
+  } else {
+    focus_rank + 55
+  }
+  hjust_name <- if (focus_rank > max(la_nz$rank, na.rm = TRUE) * 0.55) 1 else 0
 
   pa_left <- ggplot(
     filter(la_nz, !no_data, measure %in% MEAS_RANKS),
@@ -162,8 +173,23 @@ make_pair <- function(focus) {
       }
     } +
     geom_point(data = la_focus, size = 2.6, alpha = 1) +
-    # No gene-name callout on ranks panels; titles live on strips b/d + bridge.
-    # Zoom cue: vertical focus line; bridge arrow at right.
+    geom_segment(
+      data = tibble(
+        x = x_name, y = y_name,
+        xend = focus_rank, yend = max(la_focus$y_plot)
+      ),
+      aes(x = x, y = y, xend = xend, yend = yend),
+      inherit.aes = FALSE, color = "grey15", linewidth = 0.45,
+      arrow = arrow(length = unit(6, "pt"), type = "closed", angle = 22)
+    ) +
+    geom_text(
+      data = tibble(x = x_name, y = y_name, hjust = hjust_name),
+      aes(x = x, y = y, label = focus, hjust = hjust),
+      inherit.aes = FALSE, color = ACMG_COL, fontface = "bold",
+      size = 3.2, family = PAPER_FONT, vjust = 0.35
+    ) +
+    # Zoom cue: vertical focus line + gene callout at the dots; bridge arrow at right
+    # has no gene-name text (names only as strip titles on b/d).
     scale_color_manual(
       values = PAL[MEAS_RANKS], name = NULL,
       labels = MEAS_SHORT[seq_along(MEAS_RANKS)],
@@ -265,7 +291,7 @@ make_pair <- function(focus) {
   bridge <- ggplot() +
     annotate(
       "segment", x = 0.12, xend = 0.92, y = 0.50, yend = 0.50,
-      colour = ACMG_COL, linewidth = 0.85,
+      colour = "grey15", linewidth = 0.85,
       arrow = arrow(length = unit(8, "pt"), type = "closed", angle = 22)
     ) +
     coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +

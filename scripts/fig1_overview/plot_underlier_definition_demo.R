@@ -65,26 +65,25 @@ p1 <- ggplot(dens, aes(z, y)) +
 
 # ---- Step 2: retain low-expression tail (flowchart) ----
 # Horizontal flow so panel b reads as one long strip beside cohort overview.
+# Inner boxes inset from the grey frame so borders do not overlap.
 boxes <- data.frame(
-  xmin = c(0.02, 0.36, 0.70),
-  xmax = c(0.30, 0.64, 0.98),
-  ymin = c(0.22, 0.22, 0.22),
-  ymax = c(0.82, 0.82, 0.82),
+  xmin = c(0.09, 0.385, 0.68),
+  xmax = c(0.335, 0.615, 0.91),
+  ymin = c(0.34, 0.34, 0.34),
+  ymax = c(0.66, 0.66, 0.66),
   fill = c("white", COL_MID, COL_TAIL),
   color = c(COL_TAIL, COL_STEP, COL_TAIL),
   lab = c(
-    "All candidates with
-z < -3",
-    "log2CPM <
-gene_mean - 1",
-    "RNA Underlier"
+    "All candidates\nwith z < -3",
+    "log2CPM <\ngene_mean - 1",
+    "RNA\nUnderlier"
   ),
   lab_col = c(COL_TAIL, COL_LINE, "white"),
   stringsAsFactors = FALSE
 )
 arrows <- data.frame(
-  x = c(0.30, 0.64), xend = c(0.36, 0.70),
-  y = c(0.52, 0.52), yend = c(0.52, 0.52)
+  x = c(0.335, 0.615), xend = c(0.385, 0.68),
+  y = c(0.50, 0.50), yend = c(0.50, 0.50)
 )
 
 p2 <- ggplot() +
@@ -93,19 +92,19 @@ p2 <- ggplot() +
   geom_rect(
     data = boxes,
     aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-    fill = boxes$fill, color = boxes$color, linewidth = 0.7
+    fill = boxes$fill, color = boxes$color, linewidth = 0.55
   ) +
   geom_segment(
     data = arrows,
     aes(x = x, xend = xend, y = y, yend = yend),
     arrow = arrow(length = unit(0.10, "inches"), type = "closed"),
-    color = COL_STEP, linewidth = 0.7
+    color = COL_STEP, linewidth = 0.65
   ) +
   geom_text(
     data = boxes,
     aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2, label = lab),
-    color = boxes$lab_col, size = 2.9, fontface = "bold",
-    family = PAPER_FONT, lineheight = 0.95
+    color = boxes$lab_col, size = 2.5, fontface = "bold",
+    family = PAPER_FONT, lineheight = 0.92
   ) +
   coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
   labs(title = "Step 2 — retain low-expression tail", x = NULL, y = NULL) +

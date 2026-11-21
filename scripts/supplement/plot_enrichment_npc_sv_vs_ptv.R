@@ -50,13 +50,9 @@ panel <- function(vc) {
   short <- if (grepl("Rare SV", vc)) "Rare SVs" else "Rare PTVs"
   ggplot(d, aes(npcs_format, odds_ratio, color = cutoff_lab, fill = cutoff_lab)) +
     geom_hline(yintercept = 1, color = "grey60", linewidth = 0.35) +
-    # Vertical guides: 505 = AoU-style z<-3 95%-of-max plateau (max of SV/PTV
-    # earliest-plateau NPCs); 2005 = Gavish-Donoho.
-    geom_vline(xintercept = 505, linetype = "dotted", color = "grey35", linewidth = 0.45) +
-    geom_vline(xintercept = 2005, linetype = "dashed", color = "grey35", linewidth = 0.45) +
-    annotate("text", x = 505, y = Inf, label = "505 ", vjust = 1.4, hjust = 1,
-             size = 2.6, color = "grey20", fontface = "bold", family = PAPER_FONT) +
-    annotate("text", x = 2005, y = Inf, label = "2005 ", vjust = 1.4, hjust = 1,
+    # Vertical guide: 1055 = z<-3 rare-PTV enrichment peak (paper PC).
+    geom_vline(xintercept = 1055, linetype = "dashed", color = "grey35", linewidth = 0.45) +
+    annotate("text", x = 1055, y = Inf, label = "1055 ", vjust = 1.4, hjust = 1,
              size = 2.6, color = "grey20", fontface = "bold", family = PAPER_FONT) +
     geom_ribbon(aes(ymin = ci_95_lo, ymax = ci_95_hi), alpha = 0.15, color = NA) +
     geom_line(linewidth = 0.7) + geom_point(size = 1.2) +
@@ -105,8 +101,7 @@ p <- (pa | pb) +
       "residualized expression PCs. Left, rare SVs within 100 kb (AF <= 1%).",
       "Right, rare LoF/PTVs in the gene (AF <= 0.5%).",
       "Curves: Fisher odds ratio by Z-score cutoff; ribbons: 95% CI;",
-      "open circles: per-cutoff peak; dotted line: 505 PCs (z<-3 95% plateau);",
-      "dashed line: 2005 PCs (Gavish-Donoho)."
+      "open circles: per-cutoff peak; dashed line: 1055 PCs (z<-3 rare-PTV enrichment peak)."
     ),
     theme = theme(
       plot.caption = element_text(

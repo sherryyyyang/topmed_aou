@@ -1,233 +1,172 @@
-# TOPMed / AoU RNA underlier analysis — standardized pipeline
+# TOPMed / AoU RNA underlier figures
 
-Scripts and documentation to regenerate main Figures 1–4 and Supplementary Figure 1 for whole-blood RNA **underlier** analyses.
+Scripts that go from raw counts and genotypes to the figure files in `figures/`. The scripts are the copies from `submission_package_nov_2026/scripts` that assembled the panels now in `figures/`. They still point at cluster paths. Large inputs (counts, VCFs, RDS, `ptv_all.tsv`) are not in this repository.
 
-**Repository:** https://github.com/sherryyyyang/topmed_aou
+Cluster roots used by the scripts:
 
-This tree is primarily **scripts + docs** (plus rendered figures in the local submission package). Large expression matrices, genotype callsets, and individual-level data remain on analysis storage under TOPMed / dbGaP terms and are **not** redistributed here.
-
-Use this README as the **harmonization checklist** when applying the same procedure to an independent WGS + bulk RNA-seq cohort.
-
----
-
-## 0. Analysis cohort (this paper)
-
-| Cohort | Role | N (kept) |
-|--------|------|----------|
-| **TOPMed** | Matched WGS + whole-blood bulk RNA-seq (5 studies) | 5,489 |
-| **AoU** | External RNA-outlier prevalence release (cross-cohort panels only) | 8,895 in Source_Data tables |
-
-Paper delivery setting: **`PC_SETTING=1055`** (see §4).
-
----
-
-## 1. Key definitions (lock these for a new cohort)
-
-| Term | Definition |
-|------|------------|
-| **Underlier** (primary) | Expression *z* &lt; **−3** **and** log2CPM_adj &lt; gene_mean(log2CPM_adj) − **1** |
-| **Haplo** (secondary) | log2CPM arm only (PC-independent given fixed CPM matrix) |
-| **Rare PTV** (Fig. 3b *x*) | High-confidence protein-truncating variant; carrier AF **&lt; 0.5%** (AF &lt; 0.005) |
-| **Rare SV** (enrichment / Supp. Fig. 1) | Structural variant AF **≤ 1%**, gene ± **100 kb** |
-| **Fig. 3b SV (DEL)** | Gene-overlapping PASS muCNV **DEL** whose **primary** (largest \|SVLEN\|) DEL has **AF &lt; 0.5%** |
-
-Do **not** put common DELs (AF ≥ 0.5%) in the Fig. 3b **SV (DEL)** class.
-
----
-
-## 2. End-to-end procedure (raw → figures)
-
-Apply these stages in order for a new dataset. Paths below use:
-
-- `ROOT` = analysis root (`pre_Watershed_scripts` locally)
-- `PKG` = this submission package
-- `SHEYANG` = sibling data/annotation tree
-
-### Stage A — Genotypes (WGS)
-
-1. **Align / call** WGS to GRCh38 (cohort-standard pipeline).
-2. **SNV/indel PTVs:** annotate LoF / HC PTVs (VEP + LOFTEE or equivalent); export gene–subject carrier table analogous to `SHEYANG/ptv_all.tsv`.
-3. **SVs/CNVs:** PASS callset (here: muCNV) with `ALT=<DEL|DUP|INV|…>`, `INFO/SVTYPE`, `AF`, `END`.
-   - Local PASS VCFs: `…/2025-11-17/data/vcfs-pass-variants-only/chr*.vcf.gz`
-4. **Rare SV catalog for enrichment:** filter AF ≤ 1%, genotype missingness, map to genes ± 100 kb → object like `data/expression/subset_genotypes_100000_0.01_select.rds`.
-
-### Stage B — RNA-seq
-
-1. Quantify gene expression (GENCODE **v30** gene model used here).
-2. Build adjusted CPM / log2CPM matrix (`expr_cpm_adj.rds`).
-3. Keep analysis subjects (`kept_subjects.rds`; metadata with cohort covariates).
-
-### Stage C — Residualization (expression PCs + genotype PCs)
-
-1. Compute expression PCs on the analysis matrix; genotype PCs (here: **5**).
-2. Residualize expression; write **long-form z** table:
-   - `data/expression/expr_scaled_genotype_pc_5_expression_pc_<NPC>_longer_form.tsv`
-3. Point the pipeline at that table via `PC_SETTING=<NPC>` (`scripts/helpers/_paths.R`).
-
-### Stage D — Call underliers
-
-```bash
-PC_SETTING=<NPC> Rscript scripts/pc_swap/build_underlier_artifacts.R
-```
-
-Writes under `data/underliers_pc<NPC>/` (or `data/underliers/` when NPC=55):
-
-| Artifact | Content |
-|----------|---------|
-| `expr_z_join.rds` | gene × subject: *z*, log2CPM_adj |
-| `z_score_underlier_z_-3_clean.rds` | primary underlier pairs |
-| `z_score_tally_*_clean.rds` | per-gene / per-subject ranks & prevalences |
-
-**Note:** Only the *z* arm moves with `PC_SETTING`. The log2CPM arm uses the fixed `expr_cpm_adj.rds` matrix in this package’s PC-swap design.
-
-### Stage E — Choose NPC (`PC_SETTING`)
-
-Sweep rare-SV and rare-PTV enrichment vs number of expression PCs (Supp. Fig. 1):
-
-```bash
-# enrichment sweeps → plot
-Rscript scripts/supplement/plot_enrichment_npc_sv_vs_ptv.R
-```
-
-| Variant class | Peak OR (this study) | Rule used for paper |
-|---------------|----------------------|---------------------|
-| Rare SV (AF ≤ 1%, ±100 kb) | ~805 | — |
-| Rare PTV / LoF (AF ≤ 0.5%) | **1055** | **Chosen NPC = PTV enrichment peak = 1055** |
-
-Documented in `docs/PC_PLATEAU_z3.md`. Mark a single dashed guide at **1055** on Supp. Fig. 1a/b.
-
-For a new cohort: re-run the enrichment sweep and pick the **PTV-curve peak** (or pre-register an AoU-style 95%-of-max plateau if that is the study design).
-
-### Stage F — Cross-cohort prevalence (optional)
-
-AoU side is a **fixed external release** in this paper (not re-residualized with TOPMed PCs). Rebuild TOPMed vs AoU tables with:
-
-```bash
-PC_SETTING=<NPC> Rscript scripts/pc_swap/build_topmed_vs_aou_prevalence.R
-```
-
-Shared loader for Fig. 1d / 2d scatter geometry: `scripts/helpers/load_topmed_aou_prevalence_scatter.R`.
-
-### Stage G — PTV vs RNA underlier comparison (Fig. 3)
-
-1. **Carrier *z* distributions (Fig. 3a):** rare PTV carriers vs non-carriers (`plot_ptv_vs_nonptv_zscore.R`).
-2. **Gene-level scatter (Fig. 3b):** *x* = % subjects with rare PTV (AF &lt; 0.5%); *y* = % subjects with underliers.
-3. **ClinGen HI examples (Fig. 3c):** candidate histograms (`plot_candidate_gene_zscore_dist_clingen_z3.R`).
-
-#### Fig. 3b dosage colouring (default)
-
-| Legend | Rule |
-|--------|------|
-| **SV (DEL)** | Primary gene-overlapping PASS **DEL** has **AF &lt; 0.5%** (`fig3b_sv_del_genes.tsv`) |
-| **CNV / multi-copy** | SegDup (≥50% gene body, fracMatch ≥ 0.95) **or** curated multi-copy family prefixes; not already SV (DEL) |
-| **Other genes** | Remainder |
-
-**Labels:** all **SV (DEL)** genes + all **top-left** CNV / multi-copy genes (`pct_under ≥ 0.5%` and `pct_ptv ≤ 0.25%`).
-
-**AF gate:** any gene whose primary gene-overlapping DEL has **AF ≥ 0.5%** is **excluded** from **SV (DEL)** (it may still appear as **CNV / multi-copy** via SegDup/family annotation).
-
-Reference files (`ROOT/data/references/` and `PKG/supporting_data/`):
-
-- `fig3b_sv_del_genes.tsv` / `Source_Data_Fig3b_sv_del_genes.tsv`
-- `fig3b_sv_annotation_af0.005.tsv` / `Source_Data_Fig3b_sv_annotation_af0.005.tsv` (saved AF &lt; 0.5% SV table)
-- `fig3b_cnv_multicopy_genes.tsv`
-- `SOURCE_fig3b_sv_del.txt`, `SOURCE_fig3b_cnv_multicopy.txt`
-
-Optional: `FIG3B_COLOR=nmd` for NMD-escape colouring (not default).
-
-### Stage H — Constraint calibration (Fig. 2)
-
-LOEUF-tier forest, decile trend, constrained vs tolerant ranks, TOPMed vs AoU coloured by LOEUF (`scripts/fig2_constraint/`).
-
-### Stage I — ACMG exemplars (Fig. 4)
-
-1. Build shared rare-outlier gene table (`plot_shared_rare_outlier_genes_4dot.R`):
-   - Genes with **−log10** RNA-outlier prevalence **≥ 3** in **both** TOPMed and AoU (CUT = 3).
-   - Annotate ACMG SF v3.2 membership (`acmg_sf_v3.2.csv`).
-   - **Force-include** paper focus genes: **RBM20**, **MYH11** (even if they fall outside the cut).
-2. Plot rank curves + 4-dot summaries (`plot_acmg_4dot_no_ci.R`) for **RBM20** and **MYH11**.
-
-**Why these two:** ACMG secondary-findings genes that illustrate contrasting RNA vs PTV prevalence patterns in the shared high-prevalence set; force-included so low TOPMed underlier counts (e.g. MYH11 at PC1055) do not drop them from the figure.
-
-### Stage J — Assemble Nature composites
-
-```bash
-PC_SETTING=1055 ./scripts/run_pipeline_pc.sh          # full rebuild
-PC_SETTING=1055 Rscript scripts/assemble_nature_figures.R
-PC_SETTING=1055 ONLY_FIG=3 Rscript scripts/assemble_nature_figures.R
-```
-
-Outputs: `figures/main/Figure{1–4}.{png,pdf}`, `figures/supplementary/`, `source_panels/`.
-
----
-
-## 3. Path map (this deployment)
-
-| Role | Path |
+| Name | Path |
 |------|------|
-| Package (`PKG`) | `…/sheyang/submission_package_nov_2026` |
-| Analysis root (`ROOT`) | `…/sheyang/pre_Watershed_scripts` |
-| Path switch | `scripts/helpers/_paths.R` / `_paths.py` |
-| Detailed absolute inputs | `docs/PATH_TRACEABILITY.md` |
-| PC choice notes | `docs/PC_PLATEAU_z3.md` |
+| Analysis root (`ROOT`) | `/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts` |
+| Submission package | `/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/submission_package_nov_2026` |
+| Parent (`SHEYANG`) | `/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang` |
 
-`PC_SETTING` re-points:
+`scripts/helpers/_paths.R` is the path switch. Several panel scripts assign `ROOT` to the analysis-root path above *before* sourcing `_paths.R`, so `TOPMED_OUTLIERS_ROOT` is ignored in those scripts. To run off this cluster, edit those `ROOT` assignments and the defaults in `_paths.R`, `scripts/run_pipeline_pc.sh`, `scripts/assemble_nature_figures.R`, and the two `export_fig3b_*.R` wrappers.
 
-1. `Z_LONGFORM` → `expr_scaled_genotype_pc_5_expression_pc_<NPC>_longer_form.tsv`
-2. `DATA_UNDERLIER` → `data/underliers_pc<NPC>/` (or published `data/underliers/` for 55)
-3. Work / delivery dirs → `pc<NPC>_work/`, submission package figures
+## PC setting for the figures in this repo
 
----
+**The files in `figures/` were produced with `PC_SETTING=1055`** (5 genotype PCs + 1055 expression PCs on the *z* arm).
 
-## 4. Checklist for an independent cohort
-
-- [ ] WGS: PTV table + PASS SV VCF with `SVTYPE` / `AF`
-- [ ] RNA: GENCODE gene quant + adjusted CPM + kept-subject list
-- [ ] Residualize (genotype PCs + expression PCs); write long-form *z*
-- [ ] Call underliers: *z* &lt; −3 **and** log2CPM &lt; mean − 1
-- [ ] Enrichment vs NPC → choose **PC_SETTING** (document peak / plateau rule)
-- [ ] Gene-level PTV % vs underlier %; colour **SV (DEL, AF&lt;0.5%)** vs **CNV/multi-copy** vs other
-- [ ] Optional: external cohort prevalence scatter (lock external release)
-- [ ] ACMG (or disease-panel) exemplars with pre-registered focus genes + force-include rule
-- [ ] Assemble figures; deposit Source_Data tables
-
----
-
-## 5. Figure overview (this package)
-
-| Figure | Content |
-|--------|---------|
-| **Fig. 1** | Design; gene/subject underlier ranks; TOPMed vs AoU prevalence |
-| **Fig. 2** | LOEUF calibration; constrained vs tolerant; prevalence × LOEUF |
-| **Fig. 3** | PTV-carrier *z*; gene-level PTV vs underlier (dosage colours); ClinGen HI |
-| **Fig. 4** | RBM20 / MYH11 ACMG exemplars |
-| **Supp. Fig. 1** | Rare SV / PTV enrichment vs NPC (guide at 1055) |
-
----
-
-## 6. Rebuild commands (quick)
+The script default is different. `scripts/helpers/_paths.R` and `scripts/run_pipeline_pc.sh` default to **`PC_SETTING=55`**. A run that does not set the variable will not regenerate these figures. Set it explicitly:
 
 ```bash
-cd PKG   # or ROOT — assemble resolves scripts via _paths.R
-
-PC_SETTING=1055 ./scripts/run_pipeline_pc.sh
-PC_SETTING=1055 ONLY_FIG=1 Rscript scripts/assemble_nature_figures.R
-PC_SETTING=1055 ONLY_FIG=2 Rscript scripts/assemble_nature_figures.R
-PC_SETTING=1055 ONLY_FIG=3 Rscript scripts/assemble_nature_figures.R
-PC_SETTING=1055 ONLY_FIG=4 Rscript scripts/assemble_nature_figures.R
+export PC_SETTING=1055
+export TOPMED_SUBMISSION_PACKAGE=/path/to/this/clone   # see "Where scripts are read from"
 ```
 
-Published checksummed tree uses `PC_SETTING=55`. Non-55 rebuilds must not overwrite it (pipeline gate).
+What on disk shows 1055:
 
----
+- `pipeline_pc1055_20261119_021923.log` starts with `PC_SETTING=1055`, derives `data/underliers_pc1055/`, and records `wrote Figure1`, `wrote Figure2`, and `wrote Figure3`. The follow-up log `pipeline_pc1055_20261119_023053.log` (also `PC_SETTING=1055`) rewrote Figure 4 and the supplementary stage. Both logs live in the submission package `logs/` directory and are not part of this repo.
+- Figure 1 and Figure 2 panels were refreshed on 2026-11-20 under `pre_Watershed_scripts/pc1055_work/` and copied into `figures/main` the same morning.
+- Figure 3 was reassembled on 2026-11-20 from panels written that evening under `pc1055_work/fig3_ptv_vs_rna/` (`panel_a` 19:37, `panel_b` 19:39, `figures/main/Figure3.png` 19:40).
+- `export_fig3b_no_sv_color.R` and `export_fig3b_excl_sv_cnv.R` default `PC_SETTING` to **1055** and write `figures/main/Figure3b_no_sv_color.*` and `Figure3b_excl_sv_cnv.*`.
+- Supplementary Figure 1 marks a dashed guide at 1055 (`plot_enrichment_npc_sv_vs_ptv.R`). Supplementary Figure 6 keeps the enrichment-OR row where `npcs == PC_SETTING` (`make_supplementary_s2_s5.R`).
 
-## 7. Further docs
+The log2CPM arm of the underlier call does **not** move with `PC_SETTING`. `scripts/pc_swap/build_underlier_artifacts.R` reads `data/expression/expr_cpm_adj.rds`, which was residualized on 55 expression PCs. Only the *z* arm uses the 1055 long-form table.
 
-| Doc | Topic |
-|-----|--------|
-| `docs/PATH_TRACEABILITY.md` | Absolute raw/derived paths |
-| `docs/PC_PLATEAU_z3.md` | Why PC1055 |
-| `docs/FIGURE_SOURCES.md` | Panel script map |
-| `docs/README_Fig3b_NMD_escape.md` | Optional NMD colouring |
-| `docs/Supplementary_Figures_methods.md` | Supp methods |
-| `supporting_data/MANIFEST.tsv` | Source_Data inventory |
+## Underlier definition
+
+From `scripts/pc_swap/build_underlier_artifacts.R` and `scripts/helpers/_underlier_def.R`:
+
+- Primary underlier: expression *z* < −3 **and** log2CPM_adj < gene mean(log2CPM_adj) − 1.
+- Haplo: log2CPM arm only (unchanged across PC settings).
+
+## Raw inputs (on the cluster, not in git)
+
+| Input | Where the scripts read it |
+|-------|---------------------------|
+| Gene counts | `scripts/analysis/outlier_processing.R` reads `../counts/gene_counts.csv` relative to the working directory. `scripts/analysis/run_underlier_pipeline.R` CONFIG sets `counts_csv = "../counts/gene_counts.csv"` and `gencode_gff = "../annotation/gencode.v30.annotation.gff3"`. |
+| PLINK genotypes | `run_underlier_pipeline.R`: `/net/topmed11/working/porchard/for-others/julie-and-esther/2025-06-11/data/genotypes/plink` (`chr{1..22,X}.bed/bim/fam`). |
+| Multi-NPC residualized matrices | `data/expression/expr_scaled_flat_list.rds` under `ROOT` (~28 GB). `scripts/pc_swap/write_z_longform_from_flat.R` writes `data/expression/expr_scaled_genotype_pc_5_expression_pc_<PC_SETTING>_longer_form.tsv`. |
+| Adjusted log2CPM | `ROOT/data/expression/expr_cpm_adj.rds` |
+| Kept subjects, LOEUF, metadata | `ROOT/data/core/kept_subjects.rds`, `loeuf_lookup.rds`, `metadata.filtered_with_sv.txt`, `gene_median_tpm_kept.tsv` |
+| PTV table | `SHEYANG/ptv_all.tsv` (override `TOPMED_PTV_TSV` or `PTV_TSV`). Every row already has `af < 0.005` (maximum AF in the file is 0.00498). |
+| PASS SV VCFs | `sv_processing.sh` lists `/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/data/vcfs-pass-variants-only/`. `build_fig3b_segdup_svtype_genes.R` reads that same directory (`dirname(SHEYANG)/data/vcfs-pass-variants-only`). |
+| SegDup track | `build_cnv_multicopy_gene_set.R` downloads UCSC `genomicSuperDups.txt.gz` if missing and overlaps GENCODE v30 (`SHEYANG/annotation/gencode.v30.annotation.gff3`). |
+| AoU prevalence | External release under `ROOT/call-RunRnaUnderlier/rna_outputs`, joined by `scripts/pc_swap/build_topmed_vs_aou_prevalence.R`. |
+| ACMG SF v3.2 | `SHEYANG/annotation/variant_annotations/acmg_sf_v3.2.csv` |
+| ClinGen HI | `ROOT/data/references/ClinGen_HI_Sufficient_evidence.csv` |
+
+`scripts/analysis/processing.sh` is an earlier 1KGP SV filter (csh `>!` redirects). It is not the path that feeds the figures in `figures/`.
+
+## From raw files to `figures/`
+
+Run from the analysis root with `PC_SETTING=1055`. `scripts/run_pipeline_pc.sh` changes directory to `ROOT` and calls `$ROOT/scripts/...`. On the cluster those are the `pre_Watershed_scripts` copies. **Figure 3’s gene-level panel in this repo is newer than that tree:** `assemble_nature_figures.R` prefers `TOPMED_SUBMISSION_PACKAGE/scripts` when that directory exists, and that is the copy exported here. To redraw Figure 3 as in `figures/main/Figure3.png`, point `TOPMED_SUBMISSION_PACKAGE` at a checkout of these scripts (on the cluster, the submission package).
+
+### 1. Residualize expression
+
+`scripts/analysis/run_underlier_pipeline.R` is the one-shot counts → *z* pipeline. Its CONFIG default is `n_expr_pcs = 55` and `n_geno_pcs = 5`. The 1055-PC *z* matrix used for these figures is taken from the existing flat list, not by re-running that CONFIG:
+
+```bash
+PC_SETTING=1055 Rscript scripts/pc_swap/write_z_longform_from_flat.R
+```
+
+`scripts/analysis/outlier_processing.R` is the original notebook that function was distilled from (counts via `vroom("../counts/gene_counts.csv")`, edgeR CPM, PCAtools, SNPRelate genotype PCs, `limma::removeBatchEffect`).
+
+### 2. Call underliers and cross-cohort prevalence
+
+```bash
+PC_SETTING=1055 Rscript scripts/pc_swap/build_underlier_artifacts.R
+PC_SETTING=1055 Rscript scripts/pc_swap/build_topmed_vs_aou_prevalence.R
+```
+
+Writes `ROOT/data/underliers_pc1055/` (`expr_z_join.rds`, `z_score_underlier_*_clean.rds`, tallies). At `PC_SETTING=55` the same script must reproduce `data/underliers/` exactly; `run_pipeline_pc.sh` treats that as a gate and will not overwrite the 55-PC tree unless `ALLOW_PC55_WRITE=1`.
+
+### 3. Fig. 3b dosage tables (before the scatter)
+
+```bash
+Rscript scripts/fig3_ptv_vs_rna/build_cnv_multicopy_gene_set.R
+Rscript scripts/fig3_ptv_vs_rna/build_fig3b_segdup_svtype_genes.R
+```
+
+Outputs under `ROOT/data/references/`: `fig3b_cnv_multicopy_genes.tsv`, `fig3b_segdup_svtype_genes.tsv`. A gene is coloured only if it passes the SegDup rule (`segdup_ge50pct_fracMatch_ge0.95`) **and** has a gene-overlapping PASS muCNV. The primary call is the overlapping DEL, DUP, or INV with the largest `|SVLEN|` (any AF). Curated-only genes and SegDup genes with no such VCF hit stay in “Other genes”.
+
+### 4. Draw panels and assemble
+
+`scripts/run_pipeline_pc.sh` stages, in order: `preflight`, `gate`, `derive`, `seed`, `carryover`, `prevalence`, `fig1`, `fig2`, `fig3`, `fig4`, `supplement`, `tables`, `sourcedata`, `manuscript`, `prosedocs`, `readme`, `verify`.
+
+```bash
+PC_SETTING=1055 ./scripts/run_pipeline_pc.sh
+# or one figure:
+PC_SETTING=1055 ONLY_FIG=3 Rscript scripts/assemble_nature_figures.R
+```
+
+`assemble_nature_figures.R` writes composites to `figures/main/` and `figures/supplementary/` (and also to `paper/composites/` and `source_panels/` on the package). Panel scripts:
+
+| Figure | Script | What it draws |
+|--------|--------|----------------|
+| 1 | `fig1_overview/make_fig1ab_cohort_overviews.R`, `plot_underlier_definition_demo.R`, `plot_underlier_tallies_topmed_aou.R`, `plot_topmed_vs_aou_prevalence_uncolored.R` | Cohort schematic, underlier definition, gene/subject ranks, TOPMed vs AoU prevalence |
+| 2 | `fig2_constraint/plot_loeuf_calibration.R`, `plot_underlier_tallies_loeuf_constrained_tolerant.R`, `plot_topmed_vs_aou_prevalence_loeuf.R` | LOEUF forest and deciles, constrained vs tolerant ranks, prevalence × LOEUF |
+| 3a | `fig3_ptv_vs_rna/plot_ptv_vs_nonptv_zscore.R` | PTV-carrier vs non-carrier *z* (top row of Figure 3) |
+| 3b | `fig3_ptv_vs_rna/plot_ptv_vs_underlier_gene_level_2x2.R` | Gene-level PTV % vs underlier % |
+| 3c | `fig3_ptv_vs_rna/plot_candidate_gene_zscore_dist_clingen_z3.R` | ClinGen example histograms |
+| 4 | `fig4_acmg/plot_shared_rare_outlier_genes_4dot.R`, `plot_acmg_4dot_no_ci.R` | RBM20 and MYH11 rank curves and 4-dot strips. Focus genes are force-included. |
+
+Figure 3 row order in `assemble_nature_figures.R` is *z*-score (`f3b`), then gene-level scatter (`f3a`), then ClinGen (`f3c`).
+
+### 5. Supplementary figures
+
+| Output in `figures/supplementary/` | Script | PC |
+|------------------------------------|--------|----|
+| Supplementary Figure 1 (SV vs PTV enrichment across NPC; guide at 1055), `enrichment_npc_sv_vs_ptv.*`, no-overlay copies | `supplement/plot_enrichment_npc_sv_vs_ptv.R` | Sweep across NPC; not a single-PC recompute |
+| Supplementary Figures 4, 5, 6 and `FigS4`–`FigS6` | `supplement/make_supplementary_s2_s5.R` | S4–S6 use `PC_SETTING`. S6 filters `npcs == PC_SETTING`. |
+| Supplementary Figures 2 and 3 | same script | Skipped when `Supplementary_Figure2.png` and `Supplementary_Figure3.png` already exist (`SKIP_S23`). The copies here are the 2026-09-18 QC / UMAP figures (connectivity *z*, PCA scree, PERMANOVA, sequencing centre, cohort). They do not use the 1055 *z* table. |
+| Supplementary Figure 7, `FigS7*`, `FigS_celltype_pc_eval` | `supplement/plot_s1_celltype_overlay_s7.R` | Cell-type vs PC composition (PC1–80), not the 1055 underlier calls |
+| Supplementary Figure 8, `FigS8*`, and the S1 a\|b reassembly plus Supplementary Figure 10 | `supplement/plot_s8_gene_z_vs_celltype.R` | Gene *z* vs cell type uses the PC setting |
+| Supplementary Figure 9, `FigS9*` | `supplement/plot_s9_participant_characteristics.R` | Demographics; no TOPMed *z* |
+| Supplementary Figures 11–16 | `supplement/organize_canonical_supp_figs.py` | Copies earlier renders (HVG composition, UMAP, coverage tracks, PC55 vs PC2005 overlap, clinical-class prevalence, all-genes constraint sanity). Not recomputed at 1055. |
+
+`supplement/plot_ptv_consequence_summary.R` draws the PTV-consequence panel used as Supplementary Figure 10 / `FigS10a`.
+
+## Figure 3 details (as coded)
+
+**3a** (`plot_ptv_vs_nonptv_zscore.R`). The script caches both AF < 0.5% (`af < 0.005`) and AF < 0.1% (`af < 0.001`) inside PTV genes with LOFTEE `lof == "HC"`. The paper row is AF < 0.1% only:
+
+```r
+fig <- (rows[["AF<0.1%"]]$pA | rows[["AF<0.1%"]]$pB | rows[["AF<0.1%"]]$pC)
+```
+
+The right-hand panel (`pC`, title “Outlier rate (log % axis)”) plots percent of pairs on `scale_y_log10`. Values are drawn with `pmax(pct, 0.005)` so *z* < −3 and *z* < −4 bars stay visible. Fold annotations still use the unfloored percents.
+
+**3b** (`plot_ptv_vs_underlier_gene_level_2x2.R`). One point per gene. Both axes are `scale_*_log10`. Zeros are placed at half the smallest positive percent and labelled “0%”. Spearman ρ is computed on genes with `n_ptv_carriers > 0` (`stats::cor(..., method = "spearman")`).
+
+- *x* = percent of kept subjects carrying a PTV in the gene. The loader keeps `ptv_all.tsv` rows for kept subjects and does not apply a second `af <` cut. That file is already AF < 0.5%, which matches the axis title.
+- *y* = percent of kept subjects with an RNA underlier in the gene (primary definition, *z* < −3 and the log2CPM drop).
+- Colour (`FIG3B_COLOR` unset or `cnv`): SegDup-pass primary PASS SVTYPE — DEL / DUP / INV — versus other genes.
+- Point size: number of distinct gene-overlapping PASS SVs with at least one alt carrier among that gene’s *z* < −3 RNA underliers. The scale caps the aesthetic at 5 (`n_sv_size = pmin(n_sv_in_underliers, 5)`, breaks 0, 1, 2, 5+).
+
+**3c** (`plot_candidate_gene_zscore_dist_clingen_z3.R`). Candidate genes are filtered with `af < 0.001` (`PTV_AF_MAX <- 0.001`).
+
+### Alternate Figure 3b exports
+
+These do not replace `figures/main/Figure3.png`. Flags are read by `plot_ptv_vs_underlier_gene_level_2x2.R`:
+
+| Flag | Wrapper | Output |
+|------|---------|--------|
+| `NO_SV_COLOR=1` | `scripts/fig3_ptv_vs_rna/export_fig3b_no_sv_color.R` | `figures/main/Figure3b_no_sv_color.png` and `.pdf` — all genes, grey, one size, log–log, Spearman |
+| `EXCLUDE_SV_CNV=1` | `scripts/fig3_ptv_vs_rna/export_fig3b_excl_sv_cnv.R` | `figures/main/Figure3b_excl_sv_cnv.png` and `.pdf` — drops SegDup DEL/DUP/INV genes and `fig3b_cnv_multicopy_genes.tsv`, then replots in grey and recomputes Spearman |
+| `FIG3B_COLOR=nmd` | no wrapper; set the variable when sourcing the panel script | NMD-escape colouring from `nmd_escape_vep/`. Not the colouring in `Figure3.png`. |
+| `FIG3B_OTHER_ONLY=1` | `plot_fig3b_no_overlap_test.R` / the panel script | Test output only. Those PNGs are not in `figures/`. |
+
+`nmd_escape_vep/VEP_NMD_COMMAND.sh` runs Ensembl VEP offline with the NMD plugin. The input VCF and VEP text are on the cluster and are not in this repo. `nmd_escape_vep/README_NMD_escape.md` records that annotation; its ECDF note is a PC 2005 summary, not Figure 3.
+
+## What is in `figures/`
+
+- `figures/main/Figure{1,2,3,4}.{png,pdf}` — assembled main figures.
+- `figures/main/Figure3b_no_sv_color.{png,pdf}` and `Figure3b_excl_sv_cnv.{png,pdf}` — the two alternate 3b exports.
+- `figures/supplementary/` — supplementary composites (`Supplementary_Figure1`–`16`, including `Supplementary_Figure1_no_overlay`) and the panel files (`FigS*`, `enrichment_npc_sv_vs_ptv`).
+
+Test renders (`Figure3b_*_test`, `figures/pc55_scratch/`) are not included. Manuscript docx/pptx files are not included.
+
+## Scripts in the tree that do not write `figures/`
+
+Exploratory or earlier-draft scripts are still here so the directory matches the package, including all-genes / lncRNA Fig. 3a checks, `test_high_underlier_low_ptv_sv*.R`, `plot_fig3b_prevalence_boxplot_test.R`, and `plot_loeuf_calibration.original_from_transcript.R` / `.pre_legend_change.R`. They are not the commands that produced `figures/main/Figure{1–4}`.

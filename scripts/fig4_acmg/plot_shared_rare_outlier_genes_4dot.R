@@ -45,11 +45,22 @@ wilson <- function(x, n, z = 1.96) {
   tibble(lo = pmax(ctr - hw, 0), hi = pmin(ctr + hw, 1))
 }
 
-pairs <- read_tsv(file.path(FIG1C, "topmed_vs_new_z_-3_prevalence_per_gene.tsv"), show_col_types = FALSE) |>
+pairs_all <- read_tsv(file.path(FIG1C, "topmed_vs_new_z_-3_prevalence_per_gene.tsv"), show_col_types = FALSE)
+pairs <- pairs_all |>
   filter(n_topmed >= 2, n_new >= 2,
          -log10(prev_topmed) >= CUT, -log10(prev_new) >= CUT)
+# Keep Fig4 example genes even if they fall outside the shared-rare cut
+# (MYH11 at PC1055 has only 1 TOPMed underlier).
+FOCUS_KEEP <- c("RBM20", "MYH11")
+extra <- pairs_all |>
+  filter(symbol %in% FOCUS_KEEP, !gene_nv %in% pairs$gene_nv)
+if (nrow(extra) > 0) {
+  cat(sprintf("force-including Fig4 focus genes outside cut: %s\n",
+              paste(unique(extra$symbol), collapse = ", ")))
+  pairs <- bind_rows(pairs, extra)
+}
 N_TOP <- max(pairs$N_topmed); N_AOU <- max(pairs$N_new)
-cat(sprintf("genes with -log10 prevalence >= %g in both cohorts: %d\n", CUT, nrow(pairs)))
+cat(sprintf("genes with -log10 prevalence >= %g in both cohorts (+focus): %d\n", CUT, nrow(pairs)))
 
 kept <- read_rds(KEPT_SUBJECTS)
 ptv_carriers <- read_tsv(PTV_TSV, show_col_types = FALSE) |>

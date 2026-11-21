@@ -144,9 +144,12 @@ make_row <- function(r, aflab) {
       color = COL_PTV, family = PAPER_FONT, nudge_x = 0.18, show.legend = FALSE
     ) +
     scale_fill_manual(values=COL, name=NULL) +
-    scale_y_continuous(labels=label_percent(scale=1), expand=expansion(mult=c(0, 0.34))) +
+    scale_y_continuous(
+      labels = label_percent(scale = 1),
+      expand = expansion(mult = c(0, 0.22))
+    ) +
     coord_cartesian(clip = "off") +
-    labs(title="Outlier rate",
+    labs(title="Outlier rate (fold-enrichment)",
          x=NULL, y="% of pairs") +
     theme_paper() +
     theme_paper_inner_title() +

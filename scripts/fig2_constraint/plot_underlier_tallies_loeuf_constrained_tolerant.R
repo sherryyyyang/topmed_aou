@@ -235,10 +235,9 @@ con_xy <- callouts_xy |>
     filter(as.character(LOEUF_tier) == "Constrained") |>
     arrange(desc(pct_underlier), frac_tier_rank) |>
     mutate(
-        # Drop below the orange stairs, then a longer horizontal run into the
-        # open pocket (was x=0.10 sitting on the staircase; short x=0.165 still
-        # hugged the left stairs).
-        x_txt = 0.30,
+        # Drop below the orange stairs, then a short horizontal run into the
+        # open pocket (0.30 overshot into mid stairs; keep left of the steps).
+        x_txt = 0.18,
         y_txt = 10^seq(log10(0.00042), log10(0.00019), length.out = n()),
         x_elbow = frac_tier_rank,
         y_elbow = y_txt,

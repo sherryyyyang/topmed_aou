@@ -524,16 +524,13 @@ panel_overlay <- function(vc) {
   r2_breaks <- c(0, 0.25, 0.5, 0.75, 1)
   ggplot(d, aes(npcs_format, odds_ratio, color = cutoff_lab, fill = cutoff_lab)) +
     geom_hline(yintercept = 1, color = "grey60", linewidth = 0.35) +
+    # Vertical guide: 1055 = z<-3 rare-PTV enrichment peak (paper PC).
     geom_vline(
-      xintercept = c(55, 2005), linetype = "dashed",
+      xintercept = 1055, linetype = "dashed",
       color = "grey35", linewidth = 0.45
     ) +
     annotate(
-      "text", x = 55, y = Inf, label = " 55", vjust = 1.4, hjust = 0,
-      size = 2.6, color = "grey20", fontface = "bold", family = PAPER_FONT
-    ) +
-    annotate(
-      "text", x = 2005, y = Inf, label = "2005 ", vjust = 1.4, hjust = 1,
+      "text", x = 1055, y = Inf, label = "1055 ", vjust = 1.4, hjust = 1,
       size = 2.6, color = "grey20", fontface = "bold", family = PAPER_FONT
     ) +
     geom_ribbon(aes(ymin = ci_95_lo, ymax = ci_95_hi), alpha = 0.15, color = NA) +

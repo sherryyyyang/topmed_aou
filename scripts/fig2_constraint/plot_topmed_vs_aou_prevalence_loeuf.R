@@ -5,6 +5,10 @@
 # axis styling / margins match panels b and c. The older Python renderer
 # plot_topmed_vs_aou_prevalence_loeuf.py is kept only as a historical
 # reference; do not use it for the paper composite.
+#
+# Scatter data/geometry match Fig1d exactly (shared helper): same gene set,
+# same -log10 prevalences, same axis limits, same Spearman. Only LOEUF
+# coloring (plus sunflower spread so stacked genes remain visible) differs.
 suppressPackageStartupMessages({
   library(readr); library(dplyr); library(ggplot2)
 })
@@ -12,10 +16,10 @@ suppressPackageStartupMessages({
 ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
+source(file.path(ROOT, "scripts/helpers/load_topmed_aou_prevalence_scatter.R"))
 OUT_DIR <- FIG2C
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-MIN_N <- 2L
 TIER_ORDER <- c("Constrained", "Mid-low", "Mid-high", "Tolerant", "No LOEUF")
 
 sunflower <- function(k, radius) {
@@ -49,15 +53,12 @@ spread_lattice <- function(d) {
   bind_rows(pieces) |> arrange(.row) |> select(-.row)
 }
 
-d <- read_tsv(file.path(FIG1C, "topmed_vs_new_z_-3_prevalence_per_gene.tsv"),
-              show_col_types = FALSE) |>
-  filter(n_topmed >= MIN_N, n_new >= MIN_N) |>
+sc <- .load_topmed_aou_prevalence_scatter()
+d <- sc$genes |>
   mutate(
     LOEUF_tier = ifelse(is.na(LOEUF_tier) | !LOEUF_tier %in% TIER_ORDER,
                         "No LOEUF", as.character(LOEUF_tier)),
-    LOEUF_tier = factor(LOEUF_tier, levels = TIER_ORDER),
-    x = -log10(prev_topmed),
-    y = -log10(prev_new)
+    LOEUF_tier = factor(LOEUF_tier, levels = TIER_ORDER)
   )
 d <- spread_lattice(d)
 
@@ -65,13 +66,10 @@ d <- spread_lattice(d)
 set.seed(1)
 d <- d[sample.int(nrow(d)), , drop = FALSE]
 
-lo <- min(c(d$x_jit, d$y_jit))
-hi <- max(c(d$x_jit, d$y_jit))
-pad <- 0.06 * (hi - lo)
-lim <- c(lo - pad, hi + pad)
-
-sp <- cor(d$prev_topmed, d$prev_new, method = "spearman")
-pe <- cor(d$x, d$y, method = "pearson")
+# Axis limits match Fig1d (true -log10 prevalences), not the jitter envelope.
+lim <- sc$lim
+sp <- sc$sp
+pe <- sc$pe
 
 # No coord_fixed: fill the cell so x/y axes align with neighbouring ggplots.
 p <- ggplot(d, aes(x_jit, y_jit, color = LOEUF_tier)) +
@@ -80,6 +78,15 @@ p <- ggplot(d, aes(x_jit, y_jit, color = LOEUF_tier)) +
   geom_point(size = 0.65, alpha = 0.75, stroke = 0.12) +
   scale_color_manual(values = TIER_COLORS, drop = FALSE, name = "LOEUF tier") +
   coord_cartesian(xlim = lim, ylim = lim, expand = FALSE) +
+  # Bottom-left: LOEUF legend already occupies the upper-left (unlike Fig1d).
+  annotate(
+    "text",
+    x = lim[1] + 0.03 * (lim[2] - lim[1]),
+    y = lim[1] + 0.03 * (lim[2] - lim[1]),
+    label = sprintf("Spearman ρ = %.2f", sp),
+    hjust = 0, vjust = 0,
+    size = 3.0, family = PAPER_FONT, colour = "grey15"
+  ) +
   labs(
     x = expression(-log[10]~TOPMed~RNA-outlier~prevalence),
     y = expression(-log[10]~AoU~RNA-outlier~prevalence)
@@ -101,7 +108,7 @@ paper_maybe_ggsave(p, file.path(OUT_DIR, "fig2_topmed_vs_aou_prevalence_loeuf_gg
                    width = NATURE_DOUBLE_IN / 2, height = NATURE_DOUBLE_IN / 2)
 if (!is_paper_assemble()) {
   cat(sprintf(
-    "Wrote ggplot Fig2d; n_genes=%s Spearman=%.2f Pearson(-log10)=%.2f\n",
-    format(nrow(d), big.mark = ","), sp, pe
+    "Wrote ggplot Fig2d; PC=%s n_genes=%s Spearman=%.2f Pearson(-log10)=%.2f\n  data=%s\n",
+    PC_SETTING, format(sc$n_genes, big.mark = ","), sp, pe, sc$path
   ))
 }

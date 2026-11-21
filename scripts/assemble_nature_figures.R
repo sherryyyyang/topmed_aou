@@ -139,11 +139,13 @@ f1e$e <- f1e$e + theme(
   legend.margin = margin(0, 0, 0, 0),
   legend.box.margin = margin(0, 0, 2, 0)
 )
-# Longer a; slightly smaller bottom. b/c stretched to d plot height;
-# d legend above d only (no blank under b/c).
-h1_overview <- max(3.15, NATURE_DOUBLE_IN * 0.66 * png_aspect(png_1a) + 0.10)
-h1_strip <- 2.20
+# Keep provided overview at native aspect (no horizontal stretch).
+# Dark empty borders are cropped in make_fig1ab; size the cell to the
+# trimmed PNG so Step 1/2 sit tight under the art (no letterbox gap).
+h1_overview <- NATURE_DOUBLE_IN * png_aspect(png_1a)
+h1_strip <- 1.70
 h1_a <- h1_overview + h1_strip
+h1_bottom <- 4.80
 w_left <- 1.00
 w_right <- 1.05
 f1$b <- f1$b + theme(
@@ -170,12 +172,68 @@ d_leg <- cowplot::get_legend(
     legend.margin = margin(0, 0, 0, 0)
   )
 )
-a_patch <- wrap_png(png_1a) / as_single_panel(f1demo$demo) +
-  plot_layout(heights = c(h1_overview, h1_strip))
-a_tmp <- tempfile(fileext = ".png")
-ggsave(a_tmp, a_patch, width = NATURE_DOUBLE_IN, height = h1_a, dpi = PAPER_DPI, bg = "white")
-# Fill-row raster (avoids letterboxed blank under a).
-a_img <- png::readPNG(a_tmp)
+# Render overview + strip at the same width, then stack with zero join gap
+# (avoids patchwork gutters and mismatched native-PNG vs ggsave widths).
+# annotation_raster fills the device exactly (wrap_png/annotation_custom
+# can leave a white gutter at the bottom of the overview cell).
+ov_rgb <- {
+  arr <- png::readPNG(png_1a)
+  if (dim(arr)[3] >= 4L) {
+    a <- arr[,,4]; out <- arr[,,1:3, drop = FALSE]
+    for (i in 1:3) out[,,i] <- out[,,i] * a + (1 - a)
+    out
+  } else {
+    arr[,,1:3, drop = FALSE]
+  }
+}
+ov_plot <- ggplot2::ggplot() +
+  ggplot2::annotation_raster(ov_rgb, xmin = 0, xmax = 1, ymin = 0, ymax = 1) +
+  ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
+  ggplot2::theme_void() +
+  ggplot2::theme(plot.margin = ggplot2::margin(0, 0, 0, 0))
+ov_tmp <- tempfile(fileext = ".png")
+ggsave(
+  ov_tmp, ov_plot,
+  width = NATURE_DOUBLE_IN, height = h1_overview, dpi = PAPER_DPI, bg = "white"
+)
+strip_tmp <- tempfile(fileext = ".png")
+ggsave(
+  strip_tmp,
+  as_single_panel(f1demo$demo, margin_pt = c(0, 2, 2, 2)),
+  width = NATURE_DOUBLE_IN, height = h1_strip, dpi = PAPER_DPI, bg = "white"
+)
+.to_rgb <- function(arr) {
+  if (dim(arr)[3] >= 4L) {
+    a <- arr[,,4]
+    out <- arr[,,1:3, drop = FALSE]
+    for (i in 1:3) out[,,i] <- out[,,i] * a + (1 - a)
+    out
+  } else {
+    arr[,,1:3, drop = FALSE]
+  }
+}
+ov <- .to_rgb(png::readPNG(ov_tmp))
+st <- .to_rgb(png::readPNG(strip_tmp))
+# Drop residual white padding at the overview/strip join.
+.trim_white_band <- function(arr, from = c("top", "bottom"), thresh = 0.985, pad = 2L) {
+  ink <- arr[,,1] < thresh | arr[,,2] < thresh | arr[,,3] < thresh
+  rows <- which(rowSums(ink) > 0)
+  if (!length(rows)) return(arr)
+  r0 <- 1L; r1 <- nrow(arr)
+  if ("top" %in% from) r0 <- max(1L, min(rows) - pad)
+  if ("bottom" %in% from) r1 <- min(nrow(arr), max(rows) + pad)
+  arr[r0:r1, , , drop = FALSE]
+}
+ov <- .trim_white_band(ov, from = "bottom", pad = 1L)
+st <- .trim_white_band(st, from = c("top", "bottom"), pad = 1L)
+wc <- min(dim(ov)[2], dim(st)[2])
+ov <- ov[, seq_len(wc), , drop = FALSE]
+st <- st[, seq_len(wc), , drop = FALSE]
+a_img <- array(1, dim = c(dim(ov)[1] + dim(st)[1], wc, 3L))
+a_img[seq_len(dim(ov)[1]), , ] <- ov
+a_img[dim(ov)[1] + seq_len(dim(st)[1]), , ] <- st
+# Panel-a height from stacked raster (overview + strip, no extra gutter).
+h1_a <- NATURE_DOUBLE_IN * (dim(a_img)[1] / dim(a_img)[2])
 panel_a <- ggplot() +
   annotation_custom(grid::rasterGrob(a_img, width = unit(1, "npc"), height = unit(1, "npc"))) +
   theme_void() +
@@ -230,10 +288,9 @@ fig1 <- cowplot::plot_grid(
   ),
   bottom_tagged,
   ncol = 1,
-  # Squeeze b/c+d further so panel-a headers are less cramped.
-  rel_heights = c(0.46, 0.54)
+  rel_heights = c(h1_a, h1_bottom)
 )
-save_fig(fig1, "Figure1", height = 7.55)
+save_fig(fig1, "Figure1", height = h1_a + h1_bottom)
 copy_panel(png_1a, "Fig1a_cohort_overview_combined.png")
 copy_panel(f1ab$left_path, "Fig1a_topmed_cohort_sankey.png")
 copy_panel(f1ab$right_path, "Fig1a_aou_cohort_overview.png")

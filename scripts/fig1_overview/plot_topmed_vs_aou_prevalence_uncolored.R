@@ -5,6 +5,9 @@
 # Uses theme_paper() so fonts / axis styling match plot_underlier_tallies_topmed_aou.R.
 # The older Python script plot_topmed_vs_aou_prevalence_uncolored.py is kept only
 # as a historical renderer; do not use it for the paper composite.
+#
+# Scatter coordinates / gene set / correlation come from the shared helper also
+# used by Fig2d (LOEUF coloring only differs there).
 suppressPackageStartupMessages({
   library(readr); library(dplyr); library(ggplot2); library(scales)
 })
@@ -12,10 +15,10 @@ suppressPackageStartupMessages({
 ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
+source(file.path(ROOT, "scripts/helpers/load_topmed_aou_prevalence_scatter.R"))
 OUT_DIR <- FIG1C
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-MIN_N <- 2L
 CUT <- 3
 BASE_S <- 10
 # Match Python size knots (points^2-ish → ggplot size in mm-ish via scale)
@@ -27,10 +30,11 @@ size_area <- function(n) {
   approx(kn, ka, xout = pmin(pmax(n, 1), 49), rule = 2)$y
 }
 
-d <- read_tsv(file.path(OUT_DIR, "topmed_vs_new_z_-3_prevalence_per_gene.tsv"),
-              show_col_types = FALSE) |>
-  filter(n_topmed >= MIN_N, n_new >= MIN_N) |>
-  mutate(x = -log10(prev_topmed), y = -log10(prev_new))
+sc <- .load_topmed_aou_prevalence_scatter()
+d <- sc$genes
+lim <- sc$lim
+sp <- sc$sp
+pe <- sc$pe
 
 pos <- d |>
   group_by(n_topmed, n_new, x, y) |>
@@ -39,11 +43,6 @@ pos <- d |>
     area = size_area(n_genes),
     in_corner = (x >= CUT & y >= CUT)
   )
-
-lo <- min(c(pos$x, pos$y))
-hi <- max(c(pos$x, pos$y))
-pad <- 0.06 * (hi - lo)
-lim <- c(lo - pad, hi + pad)
 
 # Same theme_paper margins / fonts as gene-rank panel (Fig 1 left column).
 p <- ggplot(pos, aes(x, y)) +
@@ -75,6 +74,15 @@ p <- ggplot(pos, aes(x, y)) +
   # Fill the column width like the gene-rank panel (no coord_fixed shrink),
   # keeping equal data limits so x and y share the same scale.
   coord_cartesian(xlim = lim, ylim = lim, expand = FALSE) +
+  # One compact on-plot stat (Spearman prominent; matches Fig2d caption style).
+  annotate(
+    "text",
+    x = lim[1] + 0.03 * (lim[2] - lim[1]),
+    y = lim[2] - 0.03 * (lim[2] - lim[1]),
+    label = sprintf("Spearman ρ = %.2f", sp),
+    hjust = 0, vjust = 1,
+    size = 3.0, family = PAPER_FONT, colour = "grey15"
+  ) +
   labs(
     x = expression(-log[10]~TOPMed~RNA-outlier~prevalence),
     y = expression(-log[10]~AoU~RNA-outlier~prevalence)
@@ -91,6 +99,8 @@ p <- ggplot(pos, aes(x, y)) +
 paper_maybe_ggsave(p, file.path(OUT_DIR, "fig1_topmed_vs_aou_prevalence_uncolored_ggplot"),
                    width = NATURE_DOUBLE_IN / 2, height = 3.6)
 if (!is_paper_assemble()) {
-  cat("Wrote ggplot prevalence panel; n_genes=", nrow(d),
-      " Spearman=", round(cor(d$prev_topmed, d$prev_new, method = "spearman"), 3), "\n", sep = "")
+  cat(sprintf(
+    "Wrote ggplot prevalence panel; PC=%s n_genes=%s Spearman=%.2f Pearson(-log10)=%.2f\n  data=%s\n",
+    PC_SETTING, format(sc$n_genes, big.mark = ","), sp, pe, sc$path
+  ))
 }
