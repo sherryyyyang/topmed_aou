@@ -37,7 +37,7 @@ The log2CPM arm of the underlier call does **not** move with `PC_SETTING`. `scri
 
 From `scripts/pc_swap/build_underlier_artifacts.R` and `scripts/helpers/_underlier_def.R`:
 
-- Primary underlier: expression *z* < −3 **and** log2CPM_adj < gene mean(log2CPM_adj) − 1.
+- Primary underlier: expression *z* < −3 **and** log2CPM_adj < gene_mean − 1.
 - Haplo: log2CPM arm only (unchanged across PC settings).
 
 ## Raw inputs (on the cluster, not in git)
