@@ -6,6 +6,8 @@ An underlier is a gene–subject pair with expression z < −3 AND log2CPM_adj <
 
 Export `TOPMED_OUTLIERS_ROOT=$DATA_ROOT` and `PC_SETTING`. Panel scripts that assign `ROOT` before sourcing `scripts/helpers/_paths.R` must point `ROOT` at `$DATA_ROOT`. Only the z-score table changes with `PC_SETTING`. log2CPM_adj is read from `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
 
+The underlier run has two starting files. Genotypes start from chromosome VCFs. RNA starts from the gene-count parquet. Those two outputs meet in `run_underlier_pipeline.R`.
+
 ```bash
 export DATA_ROOT=/path/to/analysis
 export TOPMED_OUTLIERS_ROOT="$DATA_ROOT"
@@ -14,21 +16,28 @@ cd "$DATA_ROOT"
 ./scripts/run_pipeline_pc.sh
 ```
 
-## 0. Source VCFs to PLINK
+## Genotypes start from VCF
 
-`scripts/genotypes/vcf_to_plink.sh` is the standalone genotype fetch. It reads `VCF_DIR/chr{1..22,X}.vcf.gz` and a sample list. For each chromosome, bcftools keeps those samples, SNPs or indels with `|ILEN| < 50`, sites with minor allele count at least 1, and `FILTER` of `PASS` or `.`. `plink2 --vcf` then writes `$OUT_DIR/plink/chr*.bed`, `.bim`, and `.fam`. `run_underlier_pipeline.R` reads that PLINK directory.
+`scripts/genotypes/vcf_to_plink.sh` reads `VCF_DIR/chr{1..22,X}.vcf.gz` and a sample list. For each chromosome, bcftools keeps those samples, SNPs or indels with `|ILEN| < 50`, sites with minor allele count at least 1, and `FILTER` of `PASS` or `.`. `plink2 --vcf` then writes `$OUT_DIR/plink/chr*.bed`, `.bim`, and `.fam`. That PLINK directory is the genotype input to `run_underlier_pipeline.R`.
 
-`scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` is a stricter bcftools pass on chromosome VCFs: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` and `OUTDIR`. It does not read PLINK and it does not call underliers.
+```bash
+export VCF_DIR=/path/to/chr-vcfs
+export SAMPLES=/path/to/samples.txt
+export OUT_DIR=$DATA_ROOT/genotypes
+bash scripts/genotypes/vcf_to_plink.sh
+```
 
-## 0b. Structural variants
+`scripts/genotypes/filter_cohort_by_fmissing_pass_snp_indel_30bp_array.sbatch` is a second bcftools pass on the same chromosome VCFs: `FILTER=PASS`, then `F_MISSING < 0.1`, then SNP or indel with `|ILEN| <= 30`. Set `COHORT_VCF_DIR` and `OUTDIR`. This pass writes a filtered VCF. The underlier script reads the PLINK files from `vcf_to_plink.sh`.
 
-`scripts/genotypes/process_svs.sh` concatenates the per-chromosome PASS SV VCFs in `SV_VCF_DIR` (`chr*.vcf.gz`, muCNV PASS callset) into `$OUT_DIR/svs_pass.vcf.gz`. For each id in `SV_SUBJECTS` it writes `$OUT_DIR/individual_svs/<sample>`: sites with `AF < 0.01`, `F_MISSING < 0.1`, and an alternate genotype (`CHROM`, `POS`, `END`, `ID`, `ALT`, `SVLEN`, `AF`).
+### Structural-variant VCFs
 
-Figure 3b color is a separate step. `scripts/fig3_ptv_vs_rna/build_fig3b_segdup_svtype_genes.R` reads those same per-chromosome PASS SV VCFs, keeps SegDup-pass genes, and labels each gene by its gene-overlapping DEL, DUP, or INV with the largest `|SVLEN|` (any allele frequency).
+`scripts/genotypes/process_svs.sh` starts from the per-chromosome PASS SV VCFs in `SV_VCF_DIR` (`chr*.vcf.gz`, muCNV PASS callset). It concatenates them to `$OUT_DIR/svs_pass.vcf.gz`. For each id in `SV_SUBJECTS` it writes `$OUT_DIR/individual_svs/<sample>`: sites with `AF < 0.01`, `F_MISSING < 0.1`, and an alternate genotype (`CHROM`, `POS`, `END`, `ID`, `ALT`, `SVLEN`, `AF`).
 
-## 0c. Gene-count parquet to the counts matrix
+Figure 3b color is a separate read of those same PASS SV VCFs. `scripts/fig3_ptv_vs_rna/build_fig3b_segdup_svtype_genes.R` keeps SegDup-pass genes and labels each gene by its gene-overlapping DEL, DUP, or INV with the largest `|SVLEN|` (any allele frequency).
 
-`scripts/counts/parquet_to_counts.R` is the expression matrix the underlier run starts from. It reads `GENE_COUNTS_PARQUET` (column `Name` = Ensembl gene id, remaining columns = RNA sample ids) and writes `OUT_CSV`, genes × samples. `run_underlier_pipeline.R` reads that CSV. It does not read the parquet.
+## RNA starts from the gene-count parquet
+
+`scripts/counts/parquet_to_counts.R` reads `GENE_COUNTS_PARQUET`. Column `Name` is the Ensembl gene id; the remaining columns are RNA sample ids. It writes `OUT_CSV`, genes × samples. That CSV is the expression input to `run_underlier_pipeline.R`.
 
 ```bash
 export GENE_COUNTS_PARQUET=/path/to/gene-counts.parquet
@@ -38,7 +47,7 @@ Rscript scripts/counts/parquet_to_counts.R
 
 ## 1. Counts and genotypes to z and adjusted log2CPM
 
-`scripts/analysis/run_underlier_pipeline.R` reads that CSV (`CFG$counts_csv`), a GENCODE gene model, and the PLINK files from section 0. Those PLINK files are the genotypes made from the source VCFs. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
+`scripts/analysis/run_underlier_pipeline.R` reads the CSV from the parquet step (`CFG$counts_csv`), a GENCODE gene model, and the PLINK directory from the VCF step. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
 
 If `$DATA_ROOT/data/expression/expr_scaled_flat_list.rds` already exists, `scripts/pc_swap/write_z_longform_from_flat.R` writes `$DATA_ROOT/data/expression/expr_scaled_genotype_pc_5_expression_pc_${PC_SETTING}_longer_form.tsv`.
 
