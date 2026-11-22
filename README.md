@@ -26,9 +26,19 @@ cd "$DATA_ROOT"
 
 Figure 3b color is a separate step. `scripts/fig3_ptv_vs_rna/build_fig3b_segdup_svtype_genes.R` reads those same per-chromosome PASS SV VCFs, keeps SegDup-pass genes, and labels each gene by its gene-overlapping DEL, DUP, or INV with the largest `|SVLEN|` (any allele frequency).
 
+## 0c. Gene-count parquet to the counts matrix
+
+`scripts/counts/parquet_to_counts.R` is the expression matrix the underlier run starts from. It reads `GENE_COUNTS_PARQUET` (column `Name` = Ensembl gene id, remaining columns = RNA sample ids) and writes `OUT_CSV`, genes × samples. `run_underlier_pipeline.R` reads that CSV. It does not read the parquet.
+
+```bash
+export GENE_COUNTS_PARQUET=/path/to/gene-counts.parquet
+export OUT_CSV=$DATA_ROOT/counts/gene_counts.csv
+Rscript scripts/counts/parquet_to_counts.R
+```
+
 ## 1. Counts and genotypes to z and adjusted log2CPM
 
-`scripts/analysis/run_underlier_pipeline.R` reads gene counts, a GENCODE gene model, and PLINK genotypes from the paths in its CONFIG block. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
+`scripts/analysis/run_underlier_pipeline.R` reads that CSV (`CFG$counts_csv`), a GENCODE gene model, and the PLINK files from section 0. Those PLINK files are the genotypes made from the source VCFs. Set `n_expr_pcs` to `PC_SETTING`. It writes PC-adjusted log2CPM and z-scores in its output directory. Copy `expr_cpm_adj.rds` to `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
 
 If `$DATA_ROOT/data/expression/expr_scaled_flat_list.rds` already exists, `scripts/pc_swap/write_z_longform_from_flat.R` writes `$DATA_ROOT/data/expression/expr_scaled_genotype_pc_5_expression_pc_${PC_SETTING}_longer_form.tsv`.
 
