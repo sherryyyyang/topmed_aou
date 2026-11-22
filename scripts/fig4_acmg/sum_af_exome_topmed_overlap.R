@@ -22,15 +22,16 @@ suppressPackageStartupMessages({
   library(plyranges)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 OUT_DIR <- FIG4D
 
-HERE      <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
-ANN       <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang"
+HERE      <- ROOT
+ANN       <- SHEYANG
 GFF       <- file.path(ANN, "annotation/gencode.v30.annotation.gff3.gz")
 VCF       <- file.path(ANN, "annotation/gnomad/gnomad.joint.v4.1.sites.exomes.vcf.bgz")
-PTV_TSV   <- file.path(ANN, "ptv_all.tsv")
 GENES_TSV <- file.path(HERE, "shared_rare_outlier_genes_4dot.tsv")
 BED       <- file.path(HERE, "gencode_v30_shared_rare_outlier_genes.bed")
 VCF_SUB   <- file.path(HERE, "gnomad_af_exomes_shared_rare_outlier_genes.vcf.gz")

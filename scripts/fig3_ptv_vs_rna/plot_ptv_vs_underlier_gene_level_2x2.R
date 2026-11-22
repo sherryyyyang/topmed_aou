@@ -47,7 +47,9 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(scales)
 })
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
 OUT_DIR <- FIG3A
@@ -61,10 +63,8 @@ under_rds_for <- function(m) {
             else paste0("z_score_underlier_", m, "_clean.rds"))
 }
 
-PTV_TSV <- Sys.getenv(
-  "PTV_TSV",
-  unset = "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/ptv_all.tsv"
-)
+ptv_override <- Sys.getenv("PTV_TSV", unset = "")
+if (nzchar(ptv_override)) PTV_TSV <- ptv_override
 
 TIER_LEVELS <- c("Constrained", "Mid-low", "Mid-high", "Tolerant", "No LOEUF")
 

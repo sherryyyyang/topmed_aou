@@ -13,10 +13,9 @@ suppressPackageStartupMessages({
   library(tidyr)
 })
 
-ROOT <- Sys.getenv(
-  "TOPMED_OUTLIERS_ROOT",
-  unset = "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
-)
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 
 ANN <- file.path(ROOT, "data", "references")
@@ -25,7 +24,8 @@ OUT_TSV <- file.path(ANN, "fig3b_segdup_svtype_genes.tsv")
 HITS_TSV <- file.path(ANN, "fig3b_segdup_sv_gene_hits.tsv")
 CARRIERS_TSV <- file.path(ANN, "fig3b_segdup_sv_carriers.tsv")
 SOURCE_TXT <- file.path(ANN, "SOURCE_fig3b_segdup_svtype.txt")
-VDIR <- file.path(dirname(SHEYANG), "data", "vcfs-pass-variants-only")
+VDIR <- Sys.getenv("SV_VCF_DIR", unset = "")
+if (!nzchar(VDIR)) VDIR <- file.path(ROOT, "data", "vcfs-pass-variants-only")
 
 path_bin <- function(cmd) {
   p <- Sys.which(cmd)

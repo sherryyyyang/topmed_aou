@@ -14,10 +14,8 @@
 # PC_SETTING=55 therefore has to reproduce those tables exactly; that round-trip
 # is the correctness gate for the 2005-PC replicate and is asserted below.
 #
-# Only the z-score arm of the underlier definition moves with PC_SETTING. The
-# log2CPM arm comes from expr_cpm_adj.rds, which is residualized on 55
-# expression PCs and is the same matrix in both runs; see the README written
-# into submission_package_nov_2026 for what that does and does not affect.
+# Only the z-score arm of the underlier definition moves with PC_SETTING.
+# log2CPM_adj is read from expr_cpm_adj.rds and is not rebuilt here.
 #
 # Usage:
 #   PC_SETTING=2005 Rscript scripts/pc_swap/build_underlier_artifacts.R
@@ -30,7 +28,9 @@ suppressPackageStartupMessages({
   library(data.table); library(tibble)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 
 msg <- function(...) cat(sprintf("[%s] ", format(Sys.time(), "%H:%M:%S")), ..., "\n", sep = "")

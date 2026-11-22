@@ -5,7 +5,9 @@ suppressPackageStartupMessages({
   library(tidyverse); library(scales); library(patchwork); library(ggrepel)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
 OUT_DIR <- FIG4A
@@ -15,7 +17,6 @@ setwd(PW)
 OUT_DIR <- OUT_DIR
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 
-ACMG_CSV <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/annotation/variant_annotations/acmg_sf_v3.2.csv"
 CUT <- 3
 SEP_Y <- 5.00e-7; ZERO_Y <- 3.40e-7; SEP2_Y <- 2.40e-7; NA_Y <- 1.70e-7
 MEAS <- c("TOPMed RNA-outlier prevalence", "AoU RNA-outlier prevalence",

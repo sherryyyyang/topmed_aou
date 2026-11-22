@@ -22,13 +22,13 @@ suppressPackageStartupMessages({
   library(png)
 })
 
-.default_root <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
-.default_pkg  <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/submission_package_nov_2026"
 ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
-if (!nzchar(ROOT)) ROOT <- Sys.getenv("ANALYSIS_ROOT", unset = .default_root)
-# Prefer scripts shipped inside the submission package when present.
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("ANALYSIS_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
+# Prefer scripts shipped inside TOPMED_SUBMISSION_PACKAGE when that directory has them.
 .PKG <- Sys.getenv("TOPMED_SUBMISSION_PACKAGE", unset = "")
-if (!nzchar(.PKG)) .PKG <- .default_pkg
+if (!nzchar(.PKG)) .PKG <- ROOT
 .SCR_ROOT <- if (dir.exists(file.path(.PKG, "scripts"))) .PKG else ROOT
 source(file.path(.SCR_ROOT, "scripts/helpers/_paths.R"))
 source(file.path(.SCR_ROOT, "scripts/helpers/paper_theme.R"))
@@ -70,11 +70,7 @@ source_panel <- function(script) {
   e$.paper_plots
 }
 
-.pixi_py <- "/net/wonderland/home/sheyang/.pixi/envs/python/bin/python3"
-PY <- Sys.getenv("PAPER_PYTHON", unset = "")
-if (!nzchar(PY)) {
-  PY <- if (file.exists(.pixi_py)) .pixi_py else "python3"
-}
+PY <- Sys.getenv("PAPER_PYTHON", unset = "python3")
 
 run_py <- function(script) {
   cat("\n==== python ", basename(script), " ====\n", sep = "")

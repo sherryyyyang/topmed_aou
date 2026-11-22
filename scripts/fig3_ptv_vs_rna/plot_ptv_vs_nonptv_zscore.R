@@ -9,12 +9,13 @@ suppressPackageStartupMessages({
   library(ggplot2); library(scales); library(patchwork)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
 OUT_DIR <- FIG3B
 PW <- ROOT
-PTV_TSV <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/ptv_all.tsv"
 CACHE <- file.path(FIG3B, "ptv_vs_nonptv_zscore_cache_v2.rds")
 CUTOFFS <- c(`AF<0.5%`=0.005, `AF<0.1%`=0.001)
 

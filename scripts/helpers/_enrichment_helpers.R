@@ -8,7 +8,9 @@
 # verified against the published rare-SV odds ratios wherever the sweeps overlap.
 suppressPackageStartupMessages({ library(tidyverse); library(limma) })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 
 residualize_phenotypes <- function(n_expression_pcs, n_genotype_pcs, normalized_expression, original_metadata = NULL, expression_pcs, genotype_pcs) {

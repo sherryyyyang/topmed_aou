@@ -15,13 +15,14 @@ suppressPackageStartupMessages({
   library(ggplot2); library(scales)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/paper_theme.R"))
 OUT_DIR <- FIG3C
 
 PW <- ROOT
-SH  <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang"
 
 Z_THRESH <- -3
 # gnomAD allele fraction in ptv_all.tsv (0.001 = 0.1%); matches Fig3b paper panel.

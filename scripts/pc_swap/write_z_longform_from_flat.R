@@ -10,7 +10,9 @@ suppressPackageStartupMessages({
   library(data.table); library(tibble)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 source(file.path(ROOT, "scripts/helpers/_enrichment_helpers.R"))
 
@@ -43,7 +45,8 @@ if (!is.na(i)) {
   mat <- flat[[i]]
 } else {
   msg("npc=", npc, " not in flat list; residualizing from eigenvectors ...")
-  METADATA_PATH <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-06-11/data/metadata.filtered.txt"
+  METADATA_PATH <- Sys.getenv("TOPMED_METADATA", unset = "")
+  if (!nzchar(METADATA_PATH)) METADATA_PATH <- file.path(DATA_CORE, "metadata.filtered.txt")
   expr_qc_normalized <- read_rds(file.path(DATA_EXPR, "expr_qc_normalized.rds"))
   expr_eigenvectors_df <- rekey_expression_pcs(
     read_rds(file.path(DATA_EXPR, "expr_eigenvectors_df.rds")),

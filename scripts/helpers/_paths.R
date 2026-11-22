@@ -1,45 +1,39 @@
-# Shared paths after panel-based reorganization of pre_Watershed_scripts.
-# Source from any script:
-#   # optional: Sys.setenv(TOPMED_OUTLIERS_ROOT = "/path/to/pre_Watershed_scripts")
-#   source(file.path(Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "."), "scripts/helpers/_paths.R"))
+# Shared paths. Source after ROOT is set, or let this file set it:
+#   source(file.path(Sys.getenv("TOPMED_OUTLIERS_ROOT"), "scripts/helpers/_paths.R"))
 #
-# Path overrides (all optional; cluster defaults preserved when unset):
-#   TOPMED_OUTLIERS_ROOT / ANALYSIS_ROOT  -> ROOT (analysis tree)
-#   TOPMED_SHEYANG                        -> parent of ROOT (ptv_all.tsv, annotations)
-#   TOPMED_SUBMISSION_PACKAGE             -> non-55-PC delivery folder
-#   TOPMED_PTV_TSV / TOPMED_ACMG_CSV      -> absolute paths to those inputs
-#   PC_SETTING                            -> expression-PC residualization setting
-
-.default_root <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+# Required:
+#   TOPMED_OUTLIERS_ROOT or DATA_ROOT  -> analysis directory (data/ and scripts/)
+#   PC_SETTING                         -> expression PCs removed before z-scores
+# Optional:
+#   TOPMED_SHEYANG                     -> parent of ROOT (ptv_all.tsv, annotations)
+#   TOPMED_SUBMISSION_PACKAGE          -> where assembled figures are written
+#   TOPMED_PTV_TSV / TOPMED_ACMG_CSV   -> those inputs
 
 if (!exists("ROOT") || !nzchar(ROOT)) {
   ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+  if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
   if (!nzchar(ROOT)) ROOT <- Sys.getenv("ANALYSIS_ROOT", unset = "")
-  if (!nzchar(ROOT)) ROOT <- .default_root
+  if (!nzchar(ROOT)) {
+    stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
+  }
 }
 
 SHEYANG <- Sys.getenv("TOPMED_SHEYANG", unset = "")
 if (!nzchar(SHEYANG)) SHEYANG <- dirname(ROOT)
 
 # --------------------------------------------------------------------------
-# Expression-PC setting.
-#
-# The published analysis residualizes 55 expression PCs (+ 5 genotype PCs).
-# Any other positive integer PC_SETTING (e.g. 505 = z<-3 AoU-style 95% plateau,
-# 2005 = Gavish-Donoho) re-points three things at that replicate:
-#   (a) the long-form z-score table that underlier calls are derived from,
-#   (b) the derived underlier/tally RDS artifacts and expr_z_join,
-#   (c) the output roots, so no 55-PC file is ever written to.
-# PC_SETTING must be unset or 55 to reproduce the published analysis byte for
-# byte; every path below is then exactly what it was before this switch existed.
+# Expression-PC setting. Required. The selection rule is not in this repository.
+# PC_SETTING 55 keeps the unsuffixed data/underliers directory. Any other count
+# writes data/underliers_pc<N> and pc<N>_work/, so a second count does not
+# overwrite the first.
 # --------------------------------------------------------------------------
-PC_SETTING <- Sys.getenv("PC_SETTING", unset = "55")
+PC_SETTING <- Sys.getenv("PC_SETTING", unset = "")
 if (!grepl("^[0-9]+$", PC_SETTING) || as.integer(PC_SETTING) < 1) {
-  stop("PC_SETTING must be a positive integer (got '", PC_SETTING, "')")
+  stop("Set PC_SETTING to a positive integer (expression PCs removed).")
 }
 PC_IS_DEFAULT <- identical(PC_SETTING, "55")
 # Suffix appended to the directories that hold PC-dependent derived data and
-# all rendered output. Empty for the published 55-PC analysis.
+# rendered output. Empty when PC_SETTING is 55.
 PC_TAG <- if (PC_IS_DEFAULT) "" else paste0("_pc", PC_SETTING)
 # Non-default PC runs write under pc<N>_work/.
 PC_WORK <- if (PC_IS_DEFAULT) ROOT else file.path(ROOT, paste0("pc", PC_SETTING, "_work"))
@@ -82,9 +76,7 @@ FINAL_DRAFT <- if (PC_IS_DEFAULT) {
   file.path(ROOT, "final_paper_draft")
 } else {
   draft <- Sys.getenv("TOPMED_SUBMISSION_PACKAGE", unset = "")
-  if (!nzchar(draft)) {
-    draft <- file.path(SHEYANG, "submission_package_nov_2026")
-  }
+  if (!nzchar(draft)) draft <- ROOT
   draft
 }
 

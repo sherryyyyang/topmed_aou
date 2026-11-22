@@ -4,7 +4,7 @@ Scripts that build main Figures 1–4. Inputs are not in this repository. Set `D
 
 An underlier is a gene–subject pair with expression z < −3 AND log2CPM_adj < gene_mean − 1, where gene_mean is the per-gene mean of the same PC-adjusted log2CPM.
 
-Export `TOPMED_OUTLIERS_ROOT=$DATA_ROOT` and `PC_SETTING`. Panel scripts that assign `ROOT` before sourcing `scripts/helpers/_paths.R` must point `ROOT` at `$DATA_ROOT`. Only the z-score table changes with `PC_SETTING`. log2CPM_adj is read from `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
+Export `TOPMED_OUTLIERS_ROOT=$DATA_ROOT` and `PC_SETTING`. Scripts resolve the analysis directory from those variables. `PTV_TSV` is `$TOPMED_PTV_TSV` or `dirname($DATA_ROOT)/ptv_all.tsv`. The ACMG list is `$TOPMED_ACMG_CSV` or `dirname($DATA_ROOT)/annotation/variant_annotations/acmg_sf_v3.2.csv`. PASS SV VCFs are `$SV_VCF_DIR` or `$DATA_ROOT/data/vcfs-pass-variants-only`. Only the z-score table changes with `PC_SETTING`. log2CPM_adj is read from `$DATA_ROOT/data/expression/expr_cpm_adj.rds`.
 
 The underlier run has two starting files. Genotypes start from chromosome VCFs. RNA starts from the gene-count parquet. Those two outputs meet in `run_underlier_pipeline.R`.
 

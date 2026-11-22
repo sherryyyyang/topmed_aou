@@ -23,11 +23,12 @@ suppressPackageStartupMessages({
   library(tidyverse); library(scales); library(patchwork); library(ggrepel)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 OUT_DIR <- FIG4D
 
-PTV_TSV    <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/ptv_all.tsv"
 AF_TSV     <- file.path(FIG4D, "sum_af_exome_topmed_overlap.tsv")
 CUT        <- 3          # -log10 prevalence threshold on both axes
 TOP_N      <- 40         # genes shown with labels and CIs in panels B and C

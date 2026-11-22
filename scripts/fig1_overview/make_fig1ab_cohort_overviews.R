@@ -13,8 +13,11 @@ suppressPackageStartupMessages({
   library(png)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
-.PKG <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/submission_package_nov_2026"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
+.PKG <- Sys.getenv("TOPMED_SUBMISSION_PACKAGE", unset = "")
+if (!nzchar(.PKG)) .PKG <- ROOT
 .SCR_ROOT <- if (dir.exists(file.path(.PKG, "scripts"))) .PKG else ROOT
 source(file.path(.SCR_ROOT, "scripts/helpers/_paths.R"))
 source(file.path(.SCR_ROOT, "scripts/helpers/paper_theme.R"))
@@ -27,10 +30,7 @@ LEGACY <- file.path(ASSET_DIR, "fig1ab_cohort_overview_screenshot.png")
 
 # Prefer the author-provided overview. Only regenerate via Python when that
 # file is absent and FORCE_OVERVIEW_RECREATE=1 (or no provided/publication PNG).
-PY <- Sys.getenv(
-  "PAPER_PYTHON",
-  unset = "/net/wonderland/home/sheyang/.pixi/envs/python/bin/python3"
-)
+PY <- Sys.getenv("PAPER_PYTHON", unset = "python3")
 recreate_py <- file.path(FIG1_SCR, "recreate_publication_figure.py")
 force_recreate <- identical(Sys.getenv("FORCE_OVERVIEW_RECREATE", unset = "0"), "1")
 use_provided <- file.exists(PROVIDED) && !force_recreate

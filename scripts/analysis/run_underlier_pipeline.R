@@ -42,7 +42,7 @@ CFG <- list(
   meta_rna_col = "RNA",                              # metadata column matching counts sample names
   meta_wgs_col = "WGS",                              # metadata column matching PLINK/genotype sample ids
   gencode_gff  = "../annotation/gencode.v30.annotation.gff3",
-  plink_dir    = "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-06-11/data/genotypes/plink",  # holds chr{1..22,X}.{bed,bim,fam}
+  plink_dir    = Sys.getenv("PLINK_DIR", unset = file.path(Sys.getenv("DATA_ROOT", unset = "."), "genotypes", "plink")),
   plink_chroms = c(1:22, "X"),
 
   # --- output ---
@@ -76,7 +76,9 @@ suppressPackageStartupMessages({
   library(rtracklayer); library(vroom); library(tidyverse); library(magrittr)
 })
 
-ROOT <- "/net/topmed11/working/porchard/for-others/julie-and-esther/2025-11-17/sheyang/pre_Watershed_scripts"
+ROOT <- Sys.getenv("TOPMED_OUTLIERS_ROOT", unset = "")
+if (!nzchar(ROOT)) ROOT <- Sys.getenv("DATA_ROOT", unset = "")
+if (!nzchar(ROOT)) stop("Set TOPMED_OUTLIERS_ROOT or DATA_ROOT to the analysis directory.")
 source(file.path(ROOT, "scripts/helpers/_paths.R"))
 
 dir.create(CFG$out_dir, showWarnings = FALSE, recursive = TRUE)
